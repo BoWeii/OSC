@@ -1,4 +1,4 @@
-# Operating Systems Capstone 2022
+# My OSC 2022
 
 ## Author
 
