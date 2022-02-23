@@ -1,0 +1,6 @@
+#ifndef _PERIPHERAL_BASE_H
+#define _PERIPHERAL_BASE_H
+
+#define MMIO_BASE_ADDR 0x3F000000
+
+#endif
