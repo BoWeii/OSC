@@ -49,7 +49,8 @@ char uart_recv() {
     ref BCM2837-ARM-Peripherals p5
     */
     while (!(*(AUX_MU_LSR_REG) & 0x01)) {}
-    return *(AUX_MU_IO_REG) & 0xFF;
+    char temp= *(AUX_MU_IO_REG) & 0xFF;
+    return temp == '\r' ? '\n' : temp;
 }
 
 void uart_send_string(char* str) {

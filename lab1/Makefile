@@ -1,4 +1,4 @@
-INCLUDE = -Iinclude
+CFLAG = -Iinclude -fno-stack-protector
 K8=kernel8
 LINKER=linker.ld
 K=kernel
@@ -9,8 +9,8 @@ SRC_S:=$(shell find src/ -name '*.s')
 
 OBJS:= $(SRC_C:%.c=%.o) \
 		$(SRC_S:%.s=%.o) \
-		$(K:=.o)\
-		$(START:=.o)
+		kernel.o\
+		start.o
 
 
 all:$(K8).img
@@ -22,7 +22,7 @@ start.o: start.s
 	aarch64-linux-gnu-gcc -o $@ -c $<
 
 %.o: %.c
-	aarch64-linux-gnu-gcc -o $@ $(INCLUDE) -c $<
+	aarch64-linux-gnu-gcc -o $@ $(CFLAG) -c $<
 
 
 $(K8).img: $(OBJS)
