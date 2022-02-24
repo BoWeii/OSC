@@ -1,12 +1,13 @@
 #include "shell.h"
 #include "mini_uart.h"
-#include "string_utils.h"
+#include "utils_string.h"
+#include "peripheral/mailbox.h"
 #include <stddef.h>
 #define BUFFER_MAX_SIZE 256u
 #define COMMNAD_LENGTH_MAX 20u
 
-const char* command_list[] = { "help", "hello", "reboot" };
-const char* command_explain[] = { "print this help menu\r\n","print Hello World!\r\n","reboot the device\r\n" };
+const char* command_list[] = { "help", "hello", "reboot", "info" };
+const char* command_explain[] = { "print this help menu\r\n", "print Hello World!\r\n", "reboot the device\r\n", "the mailbox hardware info\r\n" };
 
 void read_command(char* buffer) {
     size_t index = 0;
@@ -25,7 +26,7 @@ void help() {
     for (size_t i = 0;i < sizeof(command_list) / sizeof(const char*);i++) {
         uart_send_string(command_list[i]);
         int command_len = 0;
-        while(command_list[i][command_len] != '\0'){
+        while (command_list[i][command_len] != '\0') {
             command_len++;
         }
         for (int k = COMMNAD_LENGTH_MAX - command_len;k >= 0;k--) {
@@ -41,25 +42,34 @@ void hello() {
     uart_send_string("Hello World!\r\n");
 }
 
-void reboot() {
-    uart_send_string("in reboot!\r\n");
+void info(){
+    get_board_revision();
 }
 
+void reboot() {
+    uart_send_string("in reboot!\r\n");
+    
+}
+
+
 void parse_command(char* buffer) {
-    str_newline2end(buffer);
+    utils_newline2end(buffer);
     uart_send('\r');
 
     if (buffer[0] == '\0') { // enter empty
         return;
     }
-    else if (str_compare(buffer, "help") == 0) {
+    else if (utils_str_compare(buffer, "help") == 0) {
         help();
     }
-    else if (str_compare(buffer, "hello") == 0) {
+    else if (utils_str_compare(buffer, "hello") == 0) {
         hello();
     }
-    else if (str_compare(buffer, "reboot") == 0) {
+    else if (utils_str_compare(buffer, "reboot") == 0) {
         reboot();
+    }
+    else if (utils_str_compare(buffer, "info") == 0) {
+        info();
     }
     else {
         uart_send_string("commnad '");

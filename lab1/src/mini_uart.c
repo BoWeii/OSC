@@ -1,5 +1,6 @@
 #include "peripheral/mini_uart.h"
 #include "peripheral/gpio.h"
+#include "utils_string.h"
 
 void delay(unsigned int clock) {
     while (clock--) {
@@ -49,7 +50,7 @@ char uart_recv() {
     ref BCM2837-ARM-Peripherals p5
     */
     while (!(*(AUX_MU_LSR_REG) & 0x01)) {}
-    char temp= *(AUX_MU_IO_REG) & 0xFF;
+    char temp = *(AUX_MU_IO_REG) & 0xFF;
     return temp == '\r' ? '\n' : temp;
 }
 
@@ -59,3 +60,21 @@ void uart_send_string(char* str) {
     }
 }
 
+void uart_send_int(int num, int newline) {
+    char str[256];
+    utils_int2str_dec(num, str);
+    uart_send_string(str);
+    if (newline) {
+        uart_send_string("\r\n");
+
+    }
+}
+void uart_send_uint(unsigned int num, int newline) {
+    char str[256];
+    utils_uint2str_dec(num, str);
+    uart_send_string(str);
+    if (newline) {
+        uart_send_string("\r\n");
+
+    }
+}
