@@ -10,6 +10,7 @@
 #define MAILBOX_EMPTY       0x40000000
 #define MAILBOX_FULL        0x80000000
 #define MAILBOX_RESPONSE    0x80000000
+#define ARM_MEMORY          0x00010005
 
 #define GET_BOARD_REVISION  ((volatile unsigned int *)(0x00010002))
 #define REQUEST_CODE        ((volatile unsigned int *)(0x00000000))
