@@ -34,8 +34,7 @@ void get_board_revision() {
     unsigned int a = mailbox_call(); // message passing procedure call, you should implement it following the 6 steps provided above.
     char str[256];
     // printf("0x%x\n", mailbox[5]); // it should be 0xa020d3 for rpi3 b+
-    utils_uint2str_hex(mailbox[5], str);
-    uart_send_string(str);
+    uart_hex(mailbox[5]);
     uart_send_string("\r\n");
 }
 
