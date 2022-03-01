@@ -1,13 +1,11 @@
 #include "peripheral/mailbox.h"
-#include "utils_string.h"
+#include "utils.h"
 #include "mini_uart.h"
 
-volatile unsigned int __attribute__((aligned(16))) mailbox[36];
+volatile unsigned int __attribute__((aligned(16))) mailbox[8];
 
 int mailbox_call()
 {
-    // uart_send_string("before while \r\n");
-
     unsigned int readChannel = (((unsigned int)((unsigned long)&mailbox) & ~0xF) | (0x8 & 0xF));
     while (*MAILBOX_STATUS & MAILBOX_FULL)
     {
@@ -57,10 +55,10 @@ void get_arm_memory()
     // tags end
     mailbox[7] = END_TAG;
     unsigned int a = mailbox_call(); // message passing procedure call, you should implement it following the 6 steps provided above.
-    uart_send_string("base address: ");
+    uart_send_string("Arm base address: ");
     uart_hex(mailbox[5]);
     uart_send_string("\r\n");
-    uart_send_string("memory size: ");
+    uart_send_string("Arm memory size: ");
     uart_hex(mailbox[6]);
     uart_send_string("\r\n");
 }

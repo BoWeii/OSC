@@ -1,6 +1,6 @@
 #include "peripheral/mini_uart.h"
 #include "peripheral/gpio.h"
-#include "utils_string.h"
+#include "utils.h"
 
 void delay(unsigned int clock)
 {
@@ -63,11 +63,10 @@ char uart_recv()
     return temp == '\r' ? '\n' : temp;
 }
 
-void uart_send_string(char *str)
+void uart_send_string(const char *str)
 {
-    for (int i = 0; str[i] != '\0'; i++)
-    {
-        uart_send((char)str[i]);
+    while (*str) {
+        uart_send(*str++);
     }
 }
 

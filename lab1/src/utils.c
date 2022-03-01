@@ -1,6 +1,11 @@
-#include "utils_string.h"
+#include "utils.h"
 #include <stddef.h>
 
+/* 
+
+    string part
+
+*/
 int utils_str_compare(char *a, char *b)
 {
     char aa, bb;
@@ -115,4 +120,25 @@ void utils_uint2str_hex(unsigned int num, char *str)
         }
     }
     *str = '\0';
+}
+
+/* 
+
+    reboot part
+
+*/
+
+void set(long addr, unsigned int value) {
+    volatile unsigned int* point = (unsigned int*)addr;
+    *point = value;
+}
+
+void reset(int tick) {                 // reboot after watchdog timer expire
+    set(PM_RSTC, PM_PASSWORD | 0x20);  // full reset
+    set(PM_WDOG, PM_PASSWORD | tick);  // number of watchdog tick
+}
+
+void cancel_reset() {
+    set(PM_RSTC, PM_PASSWORD | 0);  // full reset
+    set(PM_WDOG, PM_PASSWORD | 0);  // number of watchdog tick
 }
