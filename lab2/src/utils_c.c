@@ -1,7 +1,7 @@
-#include "utils.h"
+#include "utils_c.h"
 #include <stddef.h>
 
-/* 
+/*
 
     string part
 
@@ -122,23 +122,38 @@ void utils_uint2str_hex(unsigned int num, char *str)
     *str = '\0';
 }
 
-/* 
+unsigned int utils_str2uint_dec(const char *str)
+{
+    unsigned int value = 0u;
+
+    while (*str)
+    {
+        value = value * 10u + (*str - '0');
+        ++str;
+    }
+    return value;
+}
+
+/*
 
     reboot part
 
 */
 
-void set(long addr, unsigned int value) {
-    volatile unsigned int* point = (unsigned int*)addr;
+void set(long addr, unsigned int value)
+{
+    volatile unsigned int *point = (unsigned int *)addr;
     *point = value;
 }
 
-void reset(int tick) {                 // reboot after watchdog timer expire
-    set(PM_RSTC, PM_PASSWORD | 0x20);  // full reset
-    set(PM_WDOG, PM_PASSWORD | tick);  // number of watchdog tick
+void reset(int tick)
+{                                     // reboot after watchdog timer expire
+    set(PM_RSTC, PM_PASSWORD | 0x20); // full reset
+    set(PM_WDOG, PM_PASSWORD | tick); // number of watchdog tick
 }
 
-void cancel_reset() {
-    set(PM_RSTC, PM_PASSWORD | 0);  // full reset
-    set(PM_WDOG, PM_PASSWORD | 0);  // number of watchdog tick
+void cancel_reset()
+{
+    set(PM_RSTC, PM_PASSWORD | 0); // full reset
+    set(PM_WDOG, PM_PASSWORD | 0); // number of watchdog tick
 }

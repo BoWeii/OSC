@@ -1,6 +1,7 @@
 #include "shell.h"
 #include "mini_uart.h"
-#include "utils.h"
+#include "utils_c.h"
+#include "utils_assembly.h"
 #include "peripheral/mailbox.h"
 #include <stddef.h>
 #define BUFFER_MAX_SIZE 256u
@@ -66,6 +67,27 @@ void info()
     get_arm_memory();
 }
 
+void load_img()
+{
+    // const char * kernel_addr = (char *)0x40000;
+    char * const kernel_addr = (char *)0x40000;
+    uart_send_string("Please sent the kernel image size:");
+    char buffer[BUFFER_MAX_SIZE];
+    read_command(buffer);
+    utils_newline2end(buffer);
+    unsigned int img_size = utils_str2uint_dec(buffer);
+    uart_send_string("Start to load the kernel image... \r\n");
+
+    unsigned char *current=kernel_addr;
+    while(img_size--){
+        *current=uart_recv();
+        current++;
+        uart_send('.');
+    }
+    uart_send_string("loading...\r\n");
+	branchAddr(kernel_addr);
+}
+
 void parse_command(char *buffer)
 {
     utils_newline2end(buffer);
@@ -91,6 +113,10 @@ void parse_command(char *buffer)
     else if (utils_str_compare(buffer, "info") == 0)
     {
         info();
+    }
+    else if (utils_str_compare(buffer, "load_img") == 0)
+    {
+        load_img();
     }
     else
     {

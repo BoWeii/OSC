@@ -1,5 +1,5 @@
 #include "peripheral/mailbox.h"
-#include "utils.h"
+#include "utils_c.h"
 #include "mini_uart.h"
 
 volatile unsigned int __attribute__((aligned(16))) mailbox[8];

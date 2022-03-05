@@ -1,6 +1,6 @@
 #include "peripheral/mini_uart.h"
 #include "peripheral/gpio.h"
-#include "utils.h"
+#include "utils_c.h"
 
 void delay(unsigned int clock)
 {
