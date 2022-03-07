@@ -25,6 +25,8 @@ void read_command(char *buffer)
         index++;
     }
     buffer[index + 1] = '\0';
+    utils_newline2end(buffer);
+    uart_send('\r');
 }
 
 void help()
@@ -75,7 +77,6 @@ void load_img()
     uart_send_string("Please sent the kernel image size:");
     char buffer[BUFFER_MAX_SIZE];
     read_command(buffer);
-    utils_newline2end(buffer);
     unsigned int img_size = utils_str2uint_dec(buffer);
     uart_send_string("Start to load the kernel image... \r\n");
 
@@ -92,9 +93,7 @@ void load_img()
 
 void parse_command(char *buffer)
 {
-    utils_newline2end(buffer);
-    uart_send('\r');
-
+    
     if (buffer[0] == '\0')
     { // enter empty
         return;
@@ -122,7 +121,14 @@ void parse_command(char *buffer)
     }
     else if (utils_str_compare(buffer, "ls") == 0)
     {
-        initrd_list();
+        initrd_ls();
+    }
+    else if (utils_str_compare(buffer, "cat") == 0)
+    {
+        uart_send_string("Filename: ");
+        char buffer[BUFFER_MAX_SIZE];
+        read_command(buffer);
+        initrd_cat(buffer);
     }
     else
     {

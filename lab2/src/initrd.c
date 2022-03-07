@@ -19,7 +19,7 @@ unsigned long hex2dec(char *s)
     return r;
 }
 
-void align_4(void *size)
+void align_4(void *size) // aligned to 4 byte
 {
     unsigned long *x = (unsigned long *)size;
     if ((*x) & 3)
@@ -28,20 +28,36 @@ void align_4(void *size)
     }
 }
 
-void initrd_list()
+char *findFile(char *name)
+{
+    char *addr = CPIO_ADDR;
+    while (utils_str_compare((char *)(addr + sizeof(cpio_header)), "TRAILER!!!") != 0)
+    {
+        if ((utils_str_compare((char *)(addr + sizeof(cpio_header)), name) == 0))
+        {
+            return addr;
+        }
+        cpio_header *header = (cpio_header *)addr;
+        unsigned long pathname_size = hex2dec(header->c_namesize);
+        unsigned long file_size = hex2dec(header->c_filesize);
+        unsigned long headerPathname_size = sizeof(cpio_header) + pathname_size;
+
+        align_4(&headerPathname_size); // The pathname is followed by NUL bytes so that the total size of the fixed header plus pathname is a multiple	of four.
+        align_4(&file_size);           // Likewise, the	file data is padded to a multiple of four bytes.
+        addr += (headerPathname_size + file_size);
+    }
+    return 0;
+}
+void initrd_ls()
 {
     /*
      cpio archive comprises a header record with basic numeric metadata followed by
      the full pathname of the entry and the file data.
     */
-
-    // char *addr = (char *)0x8000000; // qemu
-    char *addr = (char *)0x20000000; // raspi3
-
+    char *addr = CPIO_ADDR;
     while (utils_str_compare((char *)(addr + sizeof(cpio_header)), "TRAILER!!!") != 0)
     {
         cpio_header *header = (cpio_header *)addr;
-
         unsigned long pathname_size = hex2dec(header->c_namesize);
         unsigned long file_size = hex2dec(header->c_filesize);
         unsigned long headerPathname_size = sizeof(cpio_header) + pathname_size;
@@ -49,9 +65,35 @@ void initrd_list()
         align_4(&headerPathname_size); // The pathname is followed by NUL bytes so that the total size of the fixed header plus pathname is a multiple	of four.
         align_4(&file_size);           // Likewise, the	file data is padded to a multiple of four bytes.
 
-        uart_send_string(addr + sizeof(cpio_header));
+        uart_send_string(addr + sizeof(cpio_header)); // print the fine name
         uart_send_string("\r\n");
 
         addr += (headerPathname_size + file_size);
+    }
+}
+
+void initrd_cat(char *filename)
+{
+    char *target = findFile(filename);
+    if (target)
+    {
+        cpio_header *header = (cpio_header *)target;
+        unsigned long pathname_size = hex2dec(header->c_namesize);
+        unsigned long file_size = hex2dec(header->c_filesize);
+        unsigned long headerPathname_size = sizeof(cpio_header) + pathname_size;
+
+        align_4(&headerPathname_size); // The pathname is followed by NUL bytes so that the total size of the fixed header plus pathname is a multiple	of four.
+        align_4(&file_size);           // Likewise, the	file data is padded to a multiple of four bytes.
+
+        char *file_content = target + headerPathname_size;
+        for (unsigned int i = 0; i < file_size; i++)
+        {
+            uart_send(file_content[i]);
+        }
+        uart_send_string("\r\n");
+    }
+    else
+    {
+        uart_send_string("Not found the file\r\n");
     }
 }
