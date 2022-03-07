@@ -19,6 +19,10 @@ unsigned long hex2dec(char *s)
     return r;
 }
 
+/*
+    The pathname is followed by NUL bytes so that the total size of the fixed header plus pathname is a multiple of 4.
+    Likewise, the file data is padded to a multiple of 4 bytes.
+*/
 void align_4(void *size) // aligned to 4 byte
 {
     unsigned long *x = (unsigned long *)size;
@@ -42,18 +46,14 @@ char *findFile(char *name)
         unsigned long file_size = hex2dec(header->c_filesize);
         unsigned long headerPathname_size = sizeof(cpio_header) + pathname_size;
 
-        align_4(&headerPathname_size); // The pathname is followed by NUL bytes so that the total size of the fixed header plus pathname is a multiple	of four.
-        align_4(&file_size);           // Likewise, the	file data is padded to a multiple of four bytes.
+        align_4(&headerPathname_size); 
+        align_4(&file_size);           
         addr += (headerPathname_size + file_size);
     }
     return 0;
 }
 void initrd_ls()
 {
-    /*
-     cpio archive comprises a header record with basic numeric metadata followed by
-     the full pathname of the entry and the file data.
-    */
     char *addr = CPIO_ADDR;
     while (utils_str_compare((char *)(addr + sizeof(cpio_header)), "TRAILER!!!") != 0)
     {
@@ -62,11 +62,11 @@ void initrd_ls()
         unsigned long file_size = hex2dec(header->c_filesize);
         unsigned long headerPathname_size = sizeof(cpio_header) + pathname_size;
 
-        align_4(&headerPathname_size); // The pathname is followed by NUL bytes so that the total size of the fixed header plus pathname is a multiple	of four.
-        align_4(&file_size);           // Likewise, the	file data is padded to a multiple of four bytes.
+        align_4(&headerPathname_size); 
+        align_4(&file_size);           
 
-        uart_send_string(addr + sizeof(cpio_header)); // print the fine name
-        uart_send_string("\r\n");
+        uart_send_string(addr + sizeof(cpio_header)); // print the file name
+        uart_send_string("\n");
 
         addr += (headerPathname_size + file_size);
     }
@@ -82,18 +82,18 @@ void initrd_cat(char *filename)
         unsigned long file_size = hex2dec(header->c_filesize);
         unsigned long headerPathname_size = sizeof(cpio_header) + pathname_size;
 
-        align_4(&headerPathname_size); // The pathname is followed by NUL bytes so that the total size of the fixed header plus pathname is a multiple	of four.
-        align_4(&file_size);           // Likewise, the	file data is padded to a multiple of four bytes.
+        align_4(&headerPathname_size); 
+        align_4(&file_size);           
 
         char *file_content = target + headerPathname_size;
         for (unsigned int i = 0; i < file_size; i++)
         {
-            uart_send(file_content[i]);
+            uart_send(file_content[i]); // print the file content
         }
-        uart_send_string("\r\n");
+        uart_send_string("\n");
     }
     else
     {
-        uart_send_string("Not found the file\r\n");
+        uart_send_string("Not found the file\n");
     }
 }

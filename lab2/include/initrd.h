@@ -1,8 +1,13 @@
 #ifndef _INITRD_H
 #define _INITRD_H
-// #define CPIO_ADDR  (char *)0x8000000; // qemu
-#define CPIO_ADDR  (char *)0x20000000; // raspi3
+#define CPIO_ADDR  (char *)0x8000000; // qemu
+// #define CPIO_ADDR  (char *)0x20000000; // raspi3
 
+
+/*
+    cpio archive comprises a header record with basic numeric metadata followed by
+    the full pathname of the entry and the file data.
+*/
 typedef struct cpio_header 
 {
     // uses 8-byte	hexadecimal fields for all numbers
@@ -21,6 +26,7 @@ typedef struct cpio_header
     char c_namesize[8]; // number of bytes in the pathname
     char c_check[8];    // always set to zero by writers and ignored by	readers.
 }cpio_header;
+
 
 void initrd_ls();
 void initrd_cat(char *filename);

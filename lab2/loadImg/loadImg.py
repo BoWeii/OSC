@@ -12,7 +12,7 @@ def send_img(ser,kernel):
     print(ser.read_until(b"Please sent the kernel image size:").decode(), end="")
     kernel_size=os.stat(kernel).st_size
     ser.write((str(kernel_size)+"\n").encode())
-    print(ser.read_until(b"Start to load the kernel image... \r\n").decode(), end="")
+    print(ser.read_until(b"Start to load the kernel image... \n").decode(), end="")
 
     with open(kernel, "rb") as image:
         while kernel_size > 0:
@@ -22,14 +22,7 @@ def send_img(ser,kernel):
     return
 
 if __name__ == "__main__":
-    # try:
-    #     ser = serial.Serial("/dev/ttyUSB0", BAUD_RATE, timeout=5)
-    #     print("success access raspi3")
-    # except:
-    #     print("Error to open the path with raspi3")
     ser = serial.Serial("/dev/ttyUSB0", BAUD_RATE, timeout=5)
-
-
     input_f=open("./load_img_input","r")
     print(ser.read_until(b"$ ").decode(), end="")
     while True:

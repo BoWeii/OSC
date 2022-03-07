@@ -44,6 +44,10 @@ void uart_send(char c)
     0x20 = 0000 0000 0010 0000
     ref BCM2837-ARM-Peripherals p5
     */
+    if (c == '\n')
+    {
+        uart_send('\r');
+    }
     while (!(*(AUX_MU_LSR_REG)&0x20))
     {
     }
@@ -65,7 +69,8 @@ char uart_recv()
 
 void uart_send_string(const char *str)
 {
-    while (*str) {
+    while (*str)
+    {
         uart_send(*str++);
     }
 }
@@ -77,7 +82,7 @@ void uart_send_int(int num, int newline)
     uart_send_string(str);
     if (newline)
     {
-        uart_send_string("\r\n");
+        uart_send_string("\n");
     }
 }
 void uart_send_uint(unsigned int num, int newline)
@@ -87,7 +92,7 @@ void uart_send_uint(unsigned int num, int newline)
     uart_send_string(str);
     if (newline)
     {
-        uart_send_string("\r\n");
+        uart_send_string("\n");
     }
 }
 

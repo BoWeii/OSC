@@ -4,12 +4,13 @@
 #include "utils_assembly.h"
 #include "peripheral/mailbox.h"
 #include "initrd.h"
+#include "allocator.h"
 #include <stddef.h>
 #define BUFFER_MAX_SIZE 256u
 #define COMMNAD_LENGTH_MAX 20u
 
 static const char *command_list[] = {"help", "hello", "reboot", "info"};
-static const char *command_explain[] = {"print this help menu\r\n", "print Hello World!\r\n", "reboot the device\r\n", "the mailbox hardware info\r\n"};
+static const char *command_explain[] = {"print this help menu\n", "print Hello World!\n", "reboot the device\n", "the mailbox hardware info\n"};
 
 void read_command(char *buffer)
 {
@@ -31,14 +32,22 @@ void read_command(char *buffer)
 
 void help()
 {
-    uart_send_string("help     :");
-    uart_send_string("print this help menu\r\n");
-    uart_send_string("hello    :");
-    uart_send_string("print Hello World!\r\n");
-    uart_send_string("reboot   :");
-    uart_send_string("reboot the device\r\n");
-    uart_send_string("info     :");
-    uart_send_string("the mailbox hardware info\r\n");
+    uart_send_string("help\t\t: ");
+    uart_send_string("print this help menu\n");
+    uart_send_string("hello\t\t: ");
+    uart_send_string("print Hello World!\n");
+    uart_send_string("reboot\t\t: ");
+    uart_send_string("reboot the device\n");
+    uart_send_string("info\t\t: ");
+    uart_send_string("the mailbox hardware info\n");
+    uart_send_string("load_img\t: ");
+    uart_send_string("using the loadImg.sh to load kernel image\n");
+    uart_send_string("ls\t\t: ");
+    uart_send_string("list the all file\n");
+    uart_send_string("cat\t\t: ");
+    uart_send_string("print the file content\n");
+    uart_send_string("malloc\t\t: ");
+    uart_send_string("a simple memory allocator\n");
 
     // for (size_t i = 0; i < sizeof(command_list) / sizeof(const char *); i++)
     // {
@@ -61,7 +70,7 @@ void help()
 
 void hello()
 {
-    uart_send_string("Hello World!\r\n");
+    uart_send_string("Hello World!\n");
 }
 
 void info()
@@ -72,13 +81,12 @@ void info()
 
 void load_img()
 {
-    // const char * kernel_addr = (char *)0x40000;
     char *const kernel_addr = (char *)0x40000;
     uart_send_string("Please sent the kernel image size:");
     char buffer[BUFFER_MAX_SIZE];
     read_command(buffer);
     unsigned int img_size = utils_str2uint_dec(buffer);
-    uart_send_string("Start to load the kernel image... \r\n");
+    uart_send_string("Start to load the kernel image... \n");
 
     unsigned char *current = kernel_addr;
     while (img_size--)
@@ -87,13 +95,13 @@ void load_img()
         current++;
         uart_send('.');
     }
-    uart_send_string("loading...\r\n");
+    uart_send_string("loading...\n");
     branchAddr(kernel_addr);
 }
 
 void parse_command(char *buffer)
 {
-    
+
     if (buffer[0] == '\0')
     { // enter empty
         return;
@@ -108,7 +116,7 @@ void parse_command(char *buffer)
     }
     else if (utils_str_compare(buffer, "reboot") == 0)
     {
-        uart_send_string("rebooting...\r\n");
+        uart_send_string("rebooting...\n");
         reset(1000);
     }
     else if (utils_str_compare(buffer, "info") == 0)
@@ -130,11 +138,15 @@ void parse_command(char *buffer)
         read_command(buffer);
         initrd_cat(buffer);
     }
+    else if (utils_str_compare(buffer, "malloc") == 0)
+    {
+        malloc(8);
+    }
     else
     {
         uart_send_string("commnad '");
         uart_send_string(buffer);
-        uart_send_string("' not found\r\n");
+        uart_send_string("' not found\n");
     }
 }
 

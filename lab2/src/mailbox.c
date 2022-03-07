@@ -26,7 +26,7 @@ int mailbox_call()
 
 void get_board_revision()
 {
-    uart_send_string("In get_board_revision\r\n");
+    uart_send_string("In get_board_revision\n");
     mailbox[0] = 7 * 4; // buffer size in bytes
     mailbox[1] = REQUEST_CODE;
     // tags begin
@@ -40,7 +40,7 @@ void get_board_revision()
     char str[256];
     // printf("0x%x\n", mailbox[5]); // it should be 0xa020d3 for rpi3 b+
     uart_hex(mailbox[5]);
-    uart_send_string("\r\n");
+    uart_send_string("\n");
 }
 void get_arm_memory()
 {
@@ -57,8 +57,8 @@ void get_arm_memory()
     unsigned int a = mailbox_call(); // message passing procedure call, you should implement it following the 6 steps provided above.
     uart_send_string("Arm base address: ");
     uart_hex(mailbox[5]);
-    uart_send_string("\r\n");
+    uart_send_string("\n");
     uart_send_string("Arm memory size: ");
     uart_hex(mailbox[6]);
-    uart_send_string("\r\n");
+    uart_send_string("\n");
 }
