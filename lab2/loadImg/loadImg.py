@@ -5,14 +5,15 @@ from socket import timeout
 import time
 import sys
 import serial
+from time import sleep
 
 BAUD_RATE = 115200
 
 def send_img(ser,kernel):
-    print(ser.read_until(b"Please sent the kernel image size:").decode(), end="")
+    print("Please sent the kernel image size:")
     kernel_size=os.stat(kernel).st_size
     ser.write((str(kernel_size)+"\n").encode())
-    print(ser.read_until(b"Start to load the kernel image... \n").decode(), end="")
+    print(ser.read_until(b"Start to load the kernel image... \r\n").decode(), end="")
 
     with open(kernel, "rb") as image:
         while kernel_size > 0:
@@ -23,18 +24,7 @@ def send_img(ser,kernel):
 
 if __name__ == "__main__":
     ser = serial.Serial("/dev/ttyUSB0", BAUD_RATE, timeout=5)
-    input_f=open("./load_img_input","r")
-    print(ser.read_until(b"$ ").decode(), end="")
-    while True:
-        command=(input_f.readline()).rstrip()
-        ser.write((command+"\n").encode())
-        if command=="." :
-            break
-        elif command=="load_img" :
-            kernel=(input_f.readline()).rstrip()
-            send_img(ser,kernel)
-        else:
-            print(ser.read_until(b"$ ").decode(), end="")
+    send_img(ser,"../kernel8.img")
 
     
 

@@ -32,21 +32,19 @@ void read_command(char *buffer)
 
 void help()
 {
-    uart_send_string("help\t\t: ");
+    uart_send_string("help    :");
     uart_send_string("print this help menu\n");
-    uart_send_string("hello\t\t: ");
+    uart_send_string("hello   :");
     uart_send_string("print Hello World!\n");
-    uart_send_string("reboot\t\t: ");
+    uart_send_string("reboot  : ");
     uart_send_string("reboot the device\n");
-    uart_send_string("info\t\t: ");
+    uart_send_string("info    : ");
     uart_send_string("the mailbox hardware info\n");
-    uart_send_string("load_img\t: ");
-    uart_send_string("using the loadImg.sh to load kernel image\n");
-    uart_send_string("ls\t\t: ");
+    uart_send_string("ls      : ");
     uart_send_string("list the all file\n");
-    uart_send_string("cat\t\t: ");
+    uart_send_string("cat     : ");
     uart_send_string("print the file content\n");
-    uart_send_string("malloc\t\t: ");
+    uart_send_string("malloc  : ");
     uart_send_string("a simple memory allocator\n");
 
     // for (size_t i = 0; i < sizeof(command_list) / sizeof(const char *); i++)
@@ -79,25 +77,25 @@ void info()
     get_arm_memory();
 }
 
-void load_img()
-{
-    char *const kernel_addr = (char *)0x40000;
-    uart_send_string("Please sent the kernel image size:");
-    char buffer[BUFFER_MAX_SIZE];
-    read_command(buffer);
-    unsigned int img_size = utils_str2uint_dec(buffer);
-    uart_send_string("Start to load the kernel image... \n");
+// void load_img()
+// {
+//     char *const kernel_addr = (char *)0x40000;
+//     uart_send_string("Please sent the kernel image size:");
+//     char buffer[BUFFER_MAX_SIZE];
+//     read_command(buffer);
+//     unsigned int img_size = utils_str2uint_dec(buffer);
+//     uart_send_string("Start to load the kernel image... \n");
 
-    unsigned char *current = kernel_addr;
-    while (img_size--)
-    {
-        *current = uart_recv();
-        current++;
-        uart_send('.');
-    }
-    uart_send_string("loading...\n");
-    branchAddr(kernel_addr);
-}
+//     unsigned char *current = kernel_addr;
+//     while (img_size--)
+//     {
+//         *current = uart_recv();
+//         current++;
+//         uart_send('.');
+//     }
+//     uart_send_string("loading...\n");
+//     branchAddr(kernel_addr);
+// }
 
 void parse_command(char *buffer)
 {
@@ -123,10 +121,10 @@ void parse_command(char *buffer)
     {
         info();
     }
-    else if (utils_str_compare(buffer, "load_img") == 0)
-    {
-        load_img();
-    }
+    // else if (utils_str_compare(buffer, "load_img") == 0)
+    // {
+    //     load_img();
+    // }
     else if (utils_str_compare(buffer, "ls") == 0)
     {
         initrd_ls();
