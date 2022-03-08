@@ -140,7 +140,25 @@ void parse_command(char *buffer)
     }
     else if (utils_str_compare(buffer, "malloc") == 0)
     {
-        malloc(8);
+        char *a = malloc(sizeof("1234"));
+        char *b = malloc(sizeof("789"));
+        a[0] = '0';
+        a[1] = '1';
+        a[2] = '2';
+        a[3] = '3';
+        a[4] = '\0';
+        b[0] = '7';
+        b[1] = '8';
+        b[2] = '9';
+        b[3] = '\0';
+        // uart_hex((unsigned int)a);
+        // uart_send('\n');
+        uart_send_string(a);
+        uart_send('\n');
+        // uart_hex((unsigned int)b);
+        // uart_send('\n');
+        uart_send_string(b);
+        uart_send('\n');
     }
     else
     {

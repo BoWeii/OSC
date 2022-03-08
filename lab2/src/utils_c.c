@@ -2,9 +2,7 @@
 #include <stddef.h>
 
 /*
-
     string part
-
 */
 int utils_str_compare(char *a, char *b)
 {
@@ -135,9 +133,7 @@ unsigned int utils_str2uint_dec(const char *str)
 }
 
 /*
-
     reboot part
-
 */
 
 void set(long addr, unsigned int value)
@@ -156,4 +152,21 @@ void cancel_reset()
 {
     set(PM_RSTC, PM_PASSWORD | 0); // full reset
     set(PM_WDOG, PM_PASSWORD | 0); // number of watchdog tick
+}
+
+/*
+    others
+*/
+
+void align_4(void *size) // aligned to 4 byte
+{
+/*
+    The pathname is followed by NUL bytes so that the total size of the fixed header plus pathname is a multiple of 4.
+    Likewise, the file data is padded to a multiple of 4 bytes.
+*/
+    unsigned long *x = (unsigned long *)size;
+    if ((*x) & 3)
+    {
+        (*x) += 4 - ((*x) & 3);
+    }
 }

@@ -19,18 +19,6 @@ unsigned long hex2dec(char *s)
     return r;
 }
 
-/*
-    The pathname is followed by NUL bytes so that the total size of the fixed header plus pathname is a multiple of 4.
-    Likewise, the file data is padded to a multiple of 4 bytes.
-*/
-void align_4(void *size) // aligned to 4 byte
-{
-    unsigned long *x = (unsigned long *)size;
-    if ((*x) & 3)
-    {
-        (*x) += 4 - ((*x) & 3);
-    }
-}
 
 char *findFile(char *name)
 {

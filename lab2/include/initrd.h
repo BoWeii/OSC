@@ -1,7 +1,7 @@
 #ifndef _INITRD_H
 #define _INITRD_H
-#define CPIO_ADDR  (char *)0x8000000; // qemu
-// #define CPIO_ADDR  (char *)0x20000000; // raspi3
+// #define CPIO_ADDR  (char *)0x8000000; // qemu
+#define CPIO_ADDR  (char *)0x20000000; // raspi3
 
 
 /*
