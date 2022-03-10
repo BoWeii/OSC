@@ -4,7 +4,7 @@ BL=bootloader
 LINKER=linker.ld
 K=kernel
 START=start
-RAMDISK:=archive/initramfs.cpio
+CPIO:=archive/initramfs.cpio
 
 SRC_C:=$(shell find src/ -name '*.c')
 SRC_S:=$(shell find src/ -name '*.s')
@@ -31,11 +31,11 @@ all:$(K8).img $(BL).img
 
 
 
-rd.o:$(RAMDISK)
-	aarch64-linux-gnu-ld -r -b binary -o rd.o $(RAMDISK)
+rd.o:$(CPIO)
+	aarch64-linux-gnu-ld -r -b binary -o rd.o $(CPIO)
 
-qe:$(BL).img
-	qemu-system-aarch64 -M raspi3 -kernel $< -serial null -serial stdio 
+qe:$(K8).img
+	qemu-system-aarch64 -M raspi3 -kernel $< -serial null -serial stdio -initrd $(CPIO)
 
 
 %.o: %.s
@@ -44,7 +44,7 @@ qe:$(BL).img
 %.o: %.c
 	aarch64-linux-gnu-gcc -o $@ $(CFLAG) -c $<
 
-$(RAMDISK):
+$(CPIO):
 	cd archive/rootfs&&find . | cpio -o -H newc > ../initramfs.cpio
 
 $(K8).img: $(OBJS) $(KERNEL_OBJS)

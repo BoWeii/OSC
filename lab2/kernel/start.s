@@ -1,4 +1,4 @@
-.section ".text.boot"
+.section ".text.kernel"
 
 .globl _start
 _start:
@@ -10,8 +10,8 @@ hang:
     b hang
 
 master:
-    adr    x0, bss_begin
-    adr    x1, bss_end
+    adr    x0, _sbss
+    adr    x1, _ebss
     sub    x1, x1, x0
     bl     memzero
 

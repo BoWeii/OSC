@@ -1,14 +1,24 @@
-SECTIONS
+SECTIONS 
 {
   . = 0x80000;
-  .text.boot : { *(.text.boot) }
-  .text :  { *(.text) }
+  _stext = .;
+  .text : { 
+    *(.text.kernel)
+    *(.text) 
+    *(.rodata) 
+  }
   . = ALIGN(0x1000);
-  .rodata : { *(.rodata) }
+  _etext = .;
+
+  _sdata = .;
   .data : { *(.data) }
   . = ALIGN(0x1000);
-  bss_begin = .;
+  _edata = .;
+
+  
+  _sbss = .;
   .bss : { *(.bss*) } 
-  bss_end = .;  
   . = ALIGN(0x1000);
+  _ebss = .;  
+
 }
