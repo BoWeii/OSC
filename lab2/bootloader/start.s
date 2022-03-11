@@ -1,5 +1,6 @@
 .section ".text.relo"
 .globl _start
+
 # need to relocate the bootloader from 0x80000 to 0x60000
 _start:
     adr x10, .          //x10=0x80000
@@ -22,19 +23,24 @@ end_relo:
 
 .section ".text.boot"
 .globl _start_bl
-    mrs    x0, mpidr_el1        
-    and    x0, x0,#0xFF // Check processor id
-    cbz    x0, master   // Hang for all non-primary CPU
+    ldr x20, =_dtb
+    str x0, [x20]
+    mrs    x20, mpidr_el1        
+    and    x20, x20,#0xFF // Check processor id
+    cbz    x20, master   // Hang for all non-primary CPU
 
 hang:
     b hang
 
 master:
-    adr    x0, _sbss
-    adr    x1, _ebss
-    sub    x1, x1, x0
+    adr    x20, _sbss
+    adr    x21, _ebss
+    sub    x21, x21, x20
     bl     memzero
 
     mov    sp, #0x400000    // 4MB
     bl    bootloader_main
     
+.global _dtb
+.section .data
+_dtb: .dc.a 0x0

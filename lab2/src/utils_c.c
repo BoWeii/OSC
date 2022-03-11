@@ -1,4 +1,5 @@
 #include "utils_c.h"
+#include "mini_uart.h"
 #include <stddef.h>
 
 /*
@@ -132,6 +133,12 @@ unsigned int utils_str2uint_dec(const char *str)
     return value;
 }
 
+size_t utils_strlen(const char *s) {
+  size_t i = 0;
+  while (s[i]) i++;
+  return i+1;
+}
+
 /*
     reboot part
 */
@@ -158,15 +165,19 @@ void cancel_reset()
     others
 */
 
-void align_4(void *size) // aligned to 4 byte
+void align(void *size, size_t s) // aligned to 4 byte
 {
 /*
     The pathname is followed by NUL bytes so that the total size of the fixed header plus pathname is a multiple of 4.
     Likewise, the file data is padded to a multiple of 4 bytes.
 */
     unsigned long *x = (unsigned long *)size;
-    if ((*x) & 3)
+    if ((*x) & (s-1))
     {
-        (*x) += 4 - ((*x) & 3);
+        (*x) += s - ((*x) & (s-1));
     }
+}
+
+uint32_t align_up(uint32_t size, int alignment) {
+  return (size + alignment - 1) & -alignment;
 }

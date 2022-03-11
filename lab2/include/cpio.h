@@ -1,5 +1,5 @@
-#ifndef _INITRD_H
-#define _INITRD_H
+#ifndef __CPIO_H
+#define __CPIO_H
 // #define CPIO_ADDR  (char *)0x8000000; // qemu
 #define CPIO_ADDR  (char *)0x20000000; // raspi3
 
@@ -28,7 +28,7 @@ typedef struct cpio_header
 }cpio_header;
 
 
-void initrd_ls();
-void initrd_cat(char *filename);
+void cpio_ls();
+void cpio_cat(char *filename);
 char * findFile(char *name);
 #endif

@@ -37,7 +37,7 @@ void uart_init()
     *AUX_MU_CNTL_REG = 3u; // Finally, enable transmitter and receiver
 }
 
-void uart_send(char c)
+void uart_send(const char c)
 {
     /*
     bit_5 == 1 -> writable

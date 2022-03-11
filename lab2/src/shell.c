@@ -3,14 +3,16 @@
 #include "utils_c.h"
 #include "utils_assembly.h"
 #include "peripheral/mailbox.h"
-#include "initrd.h"
+#include "cpio.h"
 #include "allocator.h"
+#include "dtb.h"
 #include <stddef.h>
 #define BUFFER_MAX_SIZE 256u
 #define COMMNAD_LENGTH_MAX 20u
 
 static const char *command_list[] = {"help", "hello", "reboot", "info"};
 static const char *command_explain[] = {"print this help menu\n", "print Hello World!\n", "reboot the device\n", "the mailbox hardware info\n"};
+extern void *_dtb_ptr;
 
 void read_command(char *buffer)
 {
@@ -46,24 +48,6 @@ void help()
     uart_send_string("print the file content\n");
     uart_send_string("malloc  : ");
     uart_send_string("a simple memory allocator\n");
-
-    // for (size_t i = 0; i < sizeof(command_list) / sizeof(const char *); i++)
-    // {
-    //     uart_hex(i);
-    //     uart_send_string(command_list[i]);
-    //     // int command_len = 0;
-    //     // while (command_list[i][command_len] != '\0')
-    //     // {
-    //     //     command_len++;
-    //     // }
-    //     // for (int k = COMMNAD_LENGTH_MAX - command_len; k >= 0; k--)
-    //     // {
-    //     //     uart_send(' ');
-    //     // }
-
-    //     uart_send_string(":");
-    //     uart_send_string(command_explain[i]);
-    // }
 }
 
 void hello()
@@ -76,26 +60,6 @@ void info()
     get_board_revision();
     get_arm_memory();
 }
-
-// void load_img()
-// {
-//     char *const kernel_addr = (char *)0x40000;
-//     uart_send_string("Please sent the kernel image size:");
-//     char buffer[BUFFER_MAX_SIZE];
-//     read_command(buffer);
-//     unsigned int img_size = utils_str2uint_dec(buffer);
-//     uart_send_string("Start to load the kernel image... \n");
-
-//     unsigned char *current = kernel_addr;
-//     while (img_size--)
-//     {
-//         *current = uart_recv();
-//         current++;
-//         uart_send('.');
-//     }
-//     uart_send_string("loading...\n");
-//     branchAddr(kernel_addr);
-// }
 
 void parse_command(char *buffer)
 {
@@ -121,20 +85,16 @@ void parse_command(char *buffer)
     {
         info();
     }
-    // else if (utils_str_compare(buffer, "load_img") == 0)
-    // {
-    //     load_img();
-    // }
     else if (utils_str_compare(buffer, "ls") == 0)
     {
-        initrd_ls();
+        cpio_ls();
     }
     else if (utils_str_compare(buffer, "cat") == 0)
     {
         uart_send_string("Filename: ");
         char buffer[BUFFER_MAX_SIZE];
         read_command(buffer);
-        initrd_cat(buffer);
+        cpio_cat(buffer);
     }
     else if (utils_str_compare(buffer, "malloc") == 0)
     {
@@ -157,6 +117,10 @@ void parse_command(char *buffer)
         // uart_send('\n');
         uart_send_string(b);
         uart_send('\n');
+    }
+    else if (utils_str_compare(buffer, "dtb") == 0)
+    {
+        fdt_traverse(callback,_dtb_ptr);
     }
     else
     {
