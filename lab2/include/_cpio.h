@@ -1,8 +1,7 @@
 #ifndef __CPIO_H
 #define __CPIO_H
 // #define CPIO_ADDR  (char *)0x8000000; // qemu
-#define CPIO_ADDR  (char *)0x20000000; // raspi3
-
+// #define CPIO_ADDR  (char *)0x20000000; // raspi3
 
 /*
     cpio archive comprises a header record with basic numeric metadata followed by
@@ -27,7 +26,7 @@ typedef struct cpio_header
     char c_check[8];    // always set to zero by writers and ignored by	readers.
 }cpio_header;
 
-
+char * cpio_addr;
 void cpio_ls();
 void cpio_cat(char *filename);
 char * findFile(char *name);

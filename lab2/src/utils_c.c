@@ -5,7 +5,7 @@
 /*
     string part
 */
-int utils_str_compare(char *a, char *b)
+int utils_str_compare(const char *a,const char *b)
 {
     char aa, bb;
     do

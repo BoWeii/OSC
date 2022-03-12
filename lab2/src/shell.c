@@ -3,15 +3,13 @@
 #include "utils_c.h"
 #include "utils_assembly.h"
 #include "peripheral/mailbox.h"
-#include "cpio.h"
+#include "_cpio.h"
 #include "allocator.h"
 #include "dtb.h"
 #include <stddef.h>
 #define BUFFER_MAX_SIZE 256u
 #define COMMNAD_LENGTH_MAX 20u
 
-static const char *command_list[] = {"help", "hello", "reboot", "info"};
-static const char *command_explain[] = {"print this help menu\n", "print Hello World!\n", "reboot the device\n", "the mailbox hardware info\n"};
 extern void *_dtb_ptr;
 
 void read_command(char *buffer)
@@ -48,6 +46,8 @@ void help()
     uart_send_string("print the file content\n");
     uart_send_string("malloc  : ");
     uart_send_string("a simple memory allocator\n");
+    uart_send_string("dtb     : ");
+    uart_send_string("print the device name tree \n");
 }
 
 void hello()
@@ -120,7 +120,7 @@ void parse_command(char *buffer)
     }
     else if (utils_str_compare(buffer, "dtb") == 0)
     {
-        fdt_traverse(callback,_dtb_ptr);
+        fdt_traverse(print_dtb,_dtb_ptr);
     }
     else
     {
