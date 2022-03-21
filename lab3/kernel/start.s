@@ -3,7 +3,8 @@
 
 _start:
     ldr    x1, =_dtb_ptr
-    str    x0, [x1]   
+    str    x0, [x1]
+    bl     from_el2_to_el1   
     mrs    x20, mpidr_el1        
     and    x20, x20,#0xFF        // Check processor id
     cbz    x20, master        // Hang for all non-primary CPU
@@ -18,7 +19,7 @@ master:
     bl     memzero
 
     mov    sp, #0x400000  // 4MB
-    bl    kernel_main
+    bl     kernel_main
     
 
 .global _dtb_ptr

@@ -122,6 +122,14 @@ void parse_command(char *buffer)
     {
         fdt_traverse(print_dtb,_dtb_ptr);
     }
+    else if (utils_str_compare(buffer, "exe") == 0)
+    {
+        uart_send_string("program name: ");
+        char buffer[BUFFER_MAX_SIZE];
+        read_command(buffer);
+        // cpio_cat(buffer);
+        cpio_load_program(buffer);
+    }
     else
     {
         uart_send_string("commnad '");

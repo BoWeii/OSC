@@ -165,13 +165,9 @@ void cancel_reset()
     others
 */
 
-void align(void *size, size_t s) // aligned to 4 byte
+void align(void *size, size_t s) 
 {
-/*
-    The pathname is followed by NUL bytes so that the total size of the fixed header plus pathname is a multiple of 4.
-    Likewise, the file data is padded to a multiple of 4 bytes.
-*/
-    unsigned long *x = (unsigned long *)size;
+    unsigned int *x = (unsigned int *)size;
     if ((*x) & (s-1))
     {
         (*x) += s - ((*x) & (s-1));

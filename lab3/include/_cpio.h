@@ -30,4 +30,5 @@ extern char * cpio_addr;
 void cpio_ls();
 void cpio_cat(char *filename);
 char * findFile(char *name);
+void cpio_load_program(char *filename);
 #endif

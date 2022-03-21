@@ -16,6 +16,10 @@ KER_S:=$(shell find kernel/ -name '*.s')
 BL_C:=$(shell find bootloader/ -name '*.c')
 BL_S:=$(shell find bootloader/ -name '*.s')
 
+ARC_S:=$(shell find archive/ -name '*.s')
+
+ARC_OBJS:= $(ARC_S:%.s=%.o) 
+
 OBJS:= $(SRC_C:%.c=%.o) \
 		$(SRC_S:%.s=%.o)\
 
@@ -29,7 +33,9 @@ BL_OBJS:=$(BL_C:%.c=%.o) \
 		src/mini_uart.o src/utils_c.o src/utils_assembly.o src/memzero.o
 
 
-all:$(K8).img $(BL).img
+
+
+all: app.img $(K8).img $(BL).img 
 
 
 
@@ -37,17 +43,18 @@ rd.o:$(CPIO)
 	aarch64-linux-gnu-ld -r -b binary -o rd.o $(CPIO)
 
 qe:$(K8).img
-	qemu-system-aarch64 -M raspi3 -kernel $< -serial null -serial stdio -initrd $(CPIO) -dtb $(DTB)
+	qemu-system-aarch64 -M raspi3 -kernel $< -display none -serial null -serial stdio -s -initrd $(CPIO) -dtb $(DTB)
+
+gdb:$(K8).img
+	qemu-system-aarch64 -M raspi3 -kernel $< -display none -S -s -initrd $(CPIO) -dtb $(DTB)
 
 
 %.o: %.s
-	aarch64-linux-gnu-gcc -o $@ -c $<
+	aarch64-linux-gnu-gcc -g -o $@ -c $<
 
 %.o: %.c
-	aarch64-linux-gnu-gcc -o $@ $(CFLAG) -c $<
+	aarch64-linux-gnu-gcc -g -o $@ $(CFLAG) -c $<
 
-$(CPIO):
-	cd archive/rootfs&&find . | cpio -o -H newc > ../initramfs.cpio
 
 $(K8).img: $(OBJS) $(KERNEL_OBJS)
 	aarch64-linux-gnu-ld -T kernel/linker.ld -o $(K8).elf $^
@@ -57,7 +64,16 @@ $(BL).img: $(BL_OBJS)
 	aarch64-linux-gnu-ld -T bootloader/linker.ld -o $(BL).elf $^
 	aarch64-linux-gnu-objcopy -O binary $(BL).elf $@
 
+app.img:$(ARC_OBJS)
+	aarch64-linux-gnu-ld -T archive/linker.ld -o archive/tmp.elf $<
+	aarch64-linux-gnu-objcopy -O binary archive/tmp.elf $@
+	cp $@ archive/rootfs/$@ 
+
+$(CPIO):
+	cd archive/rootfs&&find . | cpio -o -H newc > ../initramfs.cpio
+
 on:
 	sudo screen /dev/ttyUSB0 115200
 clean:
-	$(RM) $(K8:=.elf) $(BL:=.elf) $(OBJS) $(KERNEL_OBJS) $(BL_OBJS) $(K8:=.img) $(BL:=.img) 
+	$(RM) $(K8:=.elf) $(BL:=.elf) $(OBJS) $(KERNEL_OBJS) $(BL_OBJS) $(K8:=.img) $(BL:=.img) \
+	archive/initramfs.cpio archive/rootfs/app.img archive/app.o archive/tmp.elf
