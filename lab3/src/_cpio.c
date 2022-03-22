@@ -114,7 +114,7 @@ void cpio_load_program(char *filename)
             target++;
             file_content++;
         }
-        asm volatile("mov x0, 0x3c0  \n");
+        asm volatile("mov x0, 0x340  \n");
         asm volatile("msr spsr_el1, x0   \n");
         asm volatile("msr elr_el1, %0    \n" ::"r"(put_addr));
         asm volatile("msr sp_el0, %0    \n" ::"r"(put_addr + USTACK_SIZE));

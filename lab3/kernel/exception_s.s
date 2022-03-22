@@ -47,6 +47,11 @@ _el1_lower_el_aarch64_sync:
   load_all
   eret
 
+_el1_lower_el_aarch64_irq:
+  save_all
+  bl core_timer_handler
+  load_all
+  eret
 
 .global el1_vector_base
 .section ".vector"
@@ -91,7 +96,7 @@ el1_lower_el_aarch64_sync:
 
 .balign 0x80
 el1_lower_el_aarch64_irq:
-    b el1_lower_el_aarch64_irq
+    b _el1_lower_el_aarch64_irq
 
 .balign 0x80
 el1_lower_el_aarch64_fiq:
