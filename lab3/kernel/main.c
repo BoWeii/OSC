@@ -1,6 +1,6 @@
 #include "mini_uart.h"
 #include "dtb.h"
-#include "utils_assembly.h"
+#include "utils_s.h"
 #include "shell.h"
 
 extern void *_dtb_ptr;

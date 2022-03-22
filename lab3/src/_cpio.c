@@ -92,7 +92,7 @@ void cpio_cat(char *filename)
 void cpio_load_program(char *filename)
 {
     char *prog_addr = findFile(filename);
-    unsigned int put_addr = 0x200000;
+    void * put_addr = (void * )0x200000;
     if (prog_addr)
     {
         cpio_header *header = (cpio_header *)prog_addr;

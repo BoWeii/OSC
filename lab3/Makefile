@@ -6,6 +6,7 @@ K=kernel
 START=start
 CPIO:=archive/initramfs.cpio
 DTB:=archive/bcm2710-rpi-3-b-plus.dtb
+ARC:=app
 
 SRC_C:=$(shell find src/ -name '*.c')
 SRC_S:=$(shell find src/ -name '*.s')
@@ -30,12 +31,12 @@ KERNEL_OBJS:=$(KER_C:%.c=%.o) \
 
 BL_OBJS:=$(BL_C:%.c=%.o) \
 		$(BL_S:%.s=%.o) \
-		src/mini_uart.o src/utils_c.o src/utils_assembly.o src/memzero.o
+		src/mini_uart.o src/utils_c.o src/utils_s.o src/memzero.o
 
 
 
 
-all: app.img $(K8).img $(BL).img 
+all: $(ARC).img $(K8).img $(BL).img 
 
 
 
@@ -64,7 +65,7 @@ $(BL).img: $(BL_OBJS)
 	aarch64-linux-gnu-ld -T bootloader/linker.ld -o $(BL).elf $^
 	aarch64-linux-gnu-objcopy -O binary $(BL).elf $@
 
-app.img:$(ARC_OBJS)
+$(ARC).img:$(ARC_OBJS)
 	aarch64-linux-gnu-ld -T archive/linker.ld -o archive/tmp.elf $<
 	aarch64-linux-gnu-objcopy -O binary archive/tmp.elf $@
 	cp $@ archive/rootfs/$@ 
@@ -76,4 +77,4 @@ on:
 	sudo screen /dev/ttyUSB0 115200
 clean:
 	$(RM) $(K8:=.elf) $(BL:=.elf) $(OBJS) $(KERNEL_OBJS) $(BL_OBJS) $(K8:=.img) $(BL:=.img) \
-	archive/initramfs.cpio archive/rootfs/app.img archive/app.o archive/tmp.elf
+	archive/initramfs.cpio archive/rootfs/$(ARC).img archive/$(ARC).o archive/tmp.elf

@@ -1,6 +1,6 @@
 #include "mini_uart.h"
 #include "utils_c.h"
-#include "utils_assembly.h"
+#include "utils_s.h"
 #include <stddef.h>
 #define BUFFER_MAX_SIZE 256u
 

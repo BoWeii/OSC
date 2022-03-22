@@ -7,6 +7,7 @@ SECTIONS
   .text : { 
     *(.text.kernel)
     *(.text) 
+    *(.vector)
     *(.rodata) 
   }
   . = ALIGN(0x1000);

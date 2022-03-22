@@ -1,7 +1,7 @@
 #include "shell.h"
 #include "mini_uart.h"
 #include "utils_c.h"
-#include "utils_assembly.h"
+#include "utils_s.h"
 #include "peripheral/mailbox.h"
 #include "_cpio.h"
 #include "allocator.h"
