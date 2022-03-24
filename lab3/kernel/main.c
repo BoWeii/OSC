@@ -1,5 +1,6 @@
 #include "mini_uart.h"
 #include "dtb.h"
+#include "exception_c.h"
 #include "utils_s.h"
 #include "shell.h"
 #include "timer.h"
@@ -10,10 +11,11 @@ void kernel_main(void)
 {
     // uart_init();
     uart_send_string("Hello, world!\n");
-    fdt_traverse(get_initramfs_addr,_dtb_ptr);
+    fdt_traverse(get_initramfs_addr, _dtb_ptr);
+    int el = get_el();
     uart_send_string("kernel Exception level: ");
-    uart_hex(get_el());
+    uart_hex(el);
     uart_send('\n');
-    core_timer_enable();
+    enable_interrupt();
     shell();
 }

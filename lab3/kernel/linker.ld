@@ -1,5 +1,6 @@
 ENTRY(_start)
 
+
 SECTIONS 
 {
   . = 0x80000;
@@ -7,7 +8,6 @@ SECTIONS
   .text : { 
     *(.text.kernel)
     *(.text) 
-    *(.vector)
     *(.rodata) 
   }
   . = ALIGN(0x1000);

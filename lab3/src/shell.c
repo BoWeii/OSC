@@ -5,6 +5,7 @@
 #include "peripheral/mailbox.h"
 #include "_cpio.h"
 #include "allocator.h"
+#include "exception_c.h"
 #include "dtb.h"
 #include <stddef.h>
 #define BUFFER_MAX_SIZE 256u
@@ -48,6 +49,8 @@ void help()
     uart_send_string("a simple memory allocator\n");
     uart_send_string("dtb     : ");
     uart_send_string("print the device name tree \n");
+    uart_send_string("async   : ");
+    uart_send_string("test uart async send and recv\n");
 }
 
 void hello()
@@ -120,7 +123,7 @@ void parse_command(char *buffer)
     }
     else if (utils_str_compare(buffer, "dtb") == 0)
     {
-        fdt_traverse(print_dtb,_dtb_ptr);
+        fdt_traverse(print_dtb, _dtb_ptr);
     }
     else if (utils_str_compare(buffer, "exe") == 0)
     {
@@ -129,6 +132,10 @@ void parse_command(char *buffer)
         read_command(buffer);
         // cpio_cat(buffer);
         cpio_load_program(buffer);
+    }
+    else if (utils_str_compare(buffer, "async") == 0)
+    {
+        test_uart_async();
     }
     else
     {

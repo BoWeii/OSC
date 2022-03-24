@@ -40,10 +40,44 @@
     add sp, sp, 32 * 8
 .endm
 
+.macro exception_entry label
+    .align 7
+    b     \label                    // branch to a handler function.
+    
+.endm	
+
+
+.global el1_vector_base
+
+.align 11
+el1_vector_base:
+  exception_entry exception_handler
+  exception_entry exception_handler
+  exception_entry exception_handler
+  exception_entry exception_handler
+
+  
+  exception_entry _el1_curr_el_spx_sync
+  exception_entry _el1_curr_el_spx_irq
+  exception_entry exception_handler
+  exception_entry exception_handler
+
+  
+  exception_entry _el1_lower_el_aarch64_sync
+  exception_entry _el1_lower_el_aarch64_irq
+  exception_entry exception_handler
+  exception_entry exception_handler
+
+  
+  exception_entry exception_handler
+  exception_entry exception_handler
+  exception_entry exception_handler
+  exception_entry exception_handler
+
 
 _el1_lower_el_aarch64_sync:
   save_all
-  bl svc_handler
+  bl lower_sync_handler
   load_all
   eret
 
@@ -53,71 +87,20 @@ _el1_lower_el_aarch64_irq:
   load_all
   eret
 
-.global el1_vector_base
-.section ".vector"
+_el1_curr_el_spx_sync:
+  save_all
+  bl curr_sync_handler
+  load_all
+  eret
+  
+_el1_curr_el_spx_irq:
+  save_all
+  bl curr_irq_handler
+  load_all
+  eret
 
-
-.balign 0x800
-el1_vector_base:
-el1_curr_el_sp0_sync:
-    b el1_curr_el_sp0_sync
-
-.balign 0x80
-el1_curr_el_sp0_irq:
-    b el1_curr_el_sp0_irq
-
-.balign 0x80
-el1_curr_el_sp0_fiq:
-    b el1_curr_el_sp0_fiq
-
-.balign 0x80
-el1_curr_el_sp0_serror:
-    b el1_curr_el_sp0_serror
-
-.balign 0x80
-el1_curr_el_spx_sync:
-    b el1_curr_el_spx_sync
-
-.balign 0x80
-el1_curr_el_spx_irq:
-    b el1_curr_el_spx_irq
-
-.balign 0x80
-el1_curr_el_spx_fiq:
-    b el1_curr_el_spx_fiq
-
-.balign 0x80
-el1_curr_el_spx_serror:
-    b el1_curr_el_spx_serror
-
-.balign 0x80
-el1_lower_el_aarch64_sync:
-    b _el1_lower_el_aarch64_sync
-
-.balign 0x80
-el1_lower_el_aarch64_irq:
-    b _el1_lower_el_aarch64_irq
-
-.balign 0x80
-el1_lower_el_aarch64_fiq:
-    b el1_lower_el_aarch64_fiq
-
-.balign 0x80
-el1_lower_el_aarch64_serror:
-    b el1_lower_el_aarch64_serror
-
-.balign 0x80
-el1_lower_el_aarch32_sync:
-    b el1_lower_el_aarch32_sync
-
-.balign 0x80
-el1_lower_el_aarch32_irq:
-    b el1_lower_el_aarch32_irq
-
-.balign 0x80
-el1_lower_el_aarch32_fiq:
-    b el1_lower_el_aarch32_fiq
-
-.balign 0x80
-el1_lower_el_aarch32_serror:
-    b el1_lower_el_aarch32_serror
+exception_handler:
+  save_all
+  bl default_handler
+  load_all
+  eret 

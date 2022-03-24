@@ -2,6 +2,7 @@
 #include "utils_c.h"
 #include "allocator.h"
 #include "mini_uart.h"
+#include "timer.h"
 
 #define KSTACK_SIZE 0x2000
 #define USTACK_SIZE 0x2000
@@ -114,6 +115,7 @@ void cpio_load_program(char *filename)
             target++;
             file_content++;
         }
+        core_timer_enable();
         asm volatile("mov x0, 0x340  \n");
         asm volatile("msr spsr_el1, x0   \n");
         asm volatile("msr elr_el1, %0    \n" ::"r"(put_addr));

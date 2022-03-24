@@ -46,9 +46,6 @@ rd.o:$(CPIO)
 qe:$(K8).img
 	qemu-system-aarch64 -M raspi3 -kernel $< -display none -serial null -serial stdio -s -initrd $(CPIO) -dtb $(DTB)
 
-gdb:$(K8).img
-	qemu-system-aarch64 -M raspi3 -kernel $< -display none -S -s -initrd $(CPIO) -dtb $(DTB)
-
 
 %.o: %.s
 	aarch64-linux-gnu-gcc -g -o $@ -c $<

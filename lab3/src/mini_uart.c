@@ -2,6 +2,17 @@
 #include "peripheral/gpio.h"
 #include "utils_c.h"
 
+#define ENABLE_RECEIVE_INTERRUPTS_BIT (1 << 0)
+#define ENABLE_TRANSMIT_INTERRUPTS_BIT (1 << 1)
+#define AUX_INT_BIT (1 << 29)
+
+#define BUFFER_MAX_SIZE 256u
+
+char read_buf[BUFFER_MAX_SIZE];
+char write_buf[BUFFER_MAX_SIZE];
+int read_buf_start, read_buf_end;
+int write_buf_start, write_buf_end;
+
 void delay(unsigned int clock)
 {
     while (clock--)
@@ -9,6 +20,13 @@ void delay(unsigned int clock)
         asm volatile("nop");
     }
 }
+void enable_uart_interrupt() { *ENB_IRQS1 = AUX_IRQ; }
+
+void disable_uart_interrupt() { *DISABLE_IRQS1 = AUX_IRQ; }
+
+void set_transmit_interrupt() { *AUX_MU_IER_REG |= 0x2; }
+
+void clear_transmit_interrupt() { *AUX_MU_IER_REG &= ~(0x2); }
 
 void uart_init()
 {
@@ -29,12 +47,17 @@ void uart_init()
 
     *AUX_ENABLE = 1u;        // Enable mini uart (this also enables access to its registers)
     *AUX_MU_CNTL_REG = 0u;   // Disable auto flow control and disable receiver and transmitter (for now)
-    *AUX_MU_IER_REG = 0u;    // Disable receive and transmit interrupts
+    *AUX_MU_IER_REG = 1u;    // Enable receive
     *AUX_MU_LCR_REG = 3u;    // Enable 8 bit mode
     *AUX_MU_MCR_REG = 0u;    // Set RTS line to be always high
     *AUX_MU_BAUD_REG = 270u; // Set baud rate to 115200
-    *AUX_MU_IIR_REG = 6u;
-    *AUX_MU_CNTL_REG = 3u; // Finally, enable transmitter and receiver
+    *AUX_MU_IIR_REG = 6;
+
+    *AUX_MU_CNTL_REG = 3; // Finally, enable transmitter and receiver
+
+    read_buf_start = read_buf_end = 0;
+    write_buf_start = write_buf_end = 0;
+    // enable_uart_interrupt();
 }
 
 void uart_send(const char c)
@@ -108,4 +131,90 @@ void uart_hex(unsigned int d)
         n += n > 9 ? 0x57 : 0x30;
         uart_send(n);
     }
+}
+
+/*
+    async part
+*/
+
+void uart_handler()
+{
+    disable_uart_interrupt();
+    int RX = (*AUX_MU_IIR_REG & 0x4);
+    int TX = (*AUX_MU_IIR_REG & 0x2);
+    if (RX)
+    {
+        char c = (char)(*AUX_MU_IO_REG);
+        read_buf[read_buf_end++] = c;
+        if (read_buf_end == BUFFER_MAX_SIZE)
+            read_buf_end = 0;
+    }
+    else if (TX)
+    {
+        while (*AUX_MU_LSR_REG & 0x20)
+        {
+            if (write_buf_start == write_buf_end)
+            {
+                clear_transmit_interrupt();
+                break;
+            }
+            char c = write_buf[write_buf_start++];
+            *AUX_MU_IO_REG = c;
+            if (write_buf_start == BUFFER_MAX_SIZE)
+                write_buf_start = 0;
+        }
+    }
+    enable_uart_interrupt();
+}
+
+char uart_async_recv()
+{
+    // wait until there are new data
+    while (read_buf_start == read_buf_end)
+    {
+        asm volatile("nop");
+    }
+    char c = read_buf[read_buf_start++];
+    if (read_buf_start == BUFFER_MAX_SIZE)
+        read_buf_start = 0;
+    return c == '\r' ? '\n' : c;
+}
+
+void uart_async_send_string(char *str)
+{
+
+    for (int i = 0; str[i]; i++)
+    {
+        if (str[i] == '\n')
+        {
+            write_buf[write_buf_end++] = '\r';
+            write_buf[write_buf_end++] = '\n';
+            continue;
+        }
+        write_buf[write_buf_end++] = str[i];
+        if (write_buf_end == BUFFER_MAX_SIZE)
+            write_buf_end = 0;
+    }
+    set_transmit_interrupt();
+}
+
+void test_uart_async()
+{
+    enable_uart_interrupt();
+    delay(15000);
+    char buffer[BUFFER_MAX_SIZE];
+    size_t index = 0;
+    while (1)
+    {
+        buffer[index] = uart_async_recv();
+        if (buffer[index] == '\n')
+        {
+            break;
+        }
+        index++;
+    }
+    buffer[index + 1] = '\0';
+    uart_async_send_string(buffer);
+    // uart_async_send_string("testWTF\r\n");
+    disable_uart_interrupt();
 }

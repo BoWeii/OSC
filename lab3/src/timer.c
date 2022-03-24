@@ -14,6 +14,12 @@ void core_timer_enable()
     *CORE0_TIMER_IRQ_CTRL = 2;            // unmask timer interrupt
 }
 
+void core_timer_disable()
+{
+    write_sysreg(cntp_ctl_el0, 0); // disable
+    *CORE0_TIMER_IRQ_CTRL = 0;     // unmask timer interrupt
+}
+
 void core_timer_handler()
 {
     // cntpct_el0: The timer’s current count.

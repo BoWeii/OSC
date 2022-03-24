@@ -16,4 +16,15 @@
 #define AUX_MU_STAT_REG ((volatile unsigned int *)(MMIO_BASE + 0x00215064))
 #define AUX_MU_BAUD_REG ((volatile unsigned int *)(MMIO_BASE + 0x00215068))
 
+
+
+#define ARM_IRQ_REG_BASE ((volatile unsigned int*)(MMIO_BASE + 0x0000b000))
+#define IRQ_PENDING_1 	 ((volatile unsigned int*)(MMIO_BASE + 0x0000b204))
+#define ENB_IRQS1 		 ((volatile unsigned int*)(MMIO_BASE + 0x0000b210))
+#define DISABLE_IRQS1 	 ((volatile unsigned int*)(MMIO_BASE + 0x0000b21c))
+#define AUX_IRQ (1 << 29)
+
+
+
+
 #endif
