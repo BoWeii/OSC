@@ -6,6 +6,7 @@
 #include "_cpio.h"
 #include "allocator.h"
 #include "exception_c.h"
+#include "timer.h"
 #include "dtb.h"
 #include <stddef.h>
 #define BUFFER_MAX_SIZE 256u
@@ -31,6 +32,22 @@ void read_command(char *buffer)
     uart_send('\r');
 }
 
+void parse_arg(char *buffer, int argc, int *argi)
+{
+    int i = 0;
+    int argi_index=0;
+    argi[argi_index]=i;
+    while (buffer[i]!='\0')
+    {
+      if(buffer[i]==' '){
+          buffer[i]='\0';
+          argi[++argi_index]=++i;
+          continue;
+      }
+      i++;
+    }
+}
+
 void help()
 {
     uart_send_string("help    :");
@@ -51,6 +68,8 @@ void help()
     uart_send_string("print the device name tree \n");
     uart_send_string("async   : ");
     uart_send_string("test uart async send and recv\n");
+    uart_send_string("set     : ");
+    uart_send_string("set the timeout (set message second)\n");
 }
 
 void hello()
@@ -66,8 +85,10 @@ void info()
 
 void parse_command(char *buffer)
 {
-
-    if (buffer[0] == '\0')
+    int argc = 0;
+    int argi[BUFFER_MAX_SIZE];
+    parse_arg(buffer, argc, argi);
+    if (utils_str_compare(buffer, "") == 0)
     { // enter empty
         return;
     }
@@ -130,12 +151,15 @@ void parse_command(char *buffer)
         uart_send_string("program name: ");
         char buffer[BUFFER_MAX_SIZE];
         read_command(buffer);
-        // cpio_cat(buffer);
         cpio_load_program(buffer);
     }
     else if (utils_str_compare(buffer, "async") == 0)
     {
         test_uart_async();
+    }
+    else if (utils_str_compare(buffer, "set") == 0)
+    {
+        set_timeout(&buffer[argi[1]], &buffer[argi[2]]);
     }
     else
     {

@@ -83,7 +83,7 @@ _el1_lower_el_aarch64_sync:
 
 _el1_lower_el_aarch64_irq:
   save_all
-  bl core_timer_handler
+  bl lower_irq_handler
   load_all
   eret
 

@@ -12,6 +12,7 @@ void uart_send_uint(unsigned int num,int newline);
 void uart_send(const char c);
 char uart_recv();
 void uart_hex(unsigned int d);
+void uart_dec(unsigned int num);
 void uart_handler();
 void test_uart_async();
 char uart_async_recv();

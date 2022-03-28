@@ -132,6 +132,13 @@ void uart_hex(unsigned int d)
         uart_send(n);
     }
 }
+void uart_dec(unsigned int num){
+    if(num == 0) uart_send('0');
+    else{
+        if(num >= 10) uart_dec(num / 10);
+        uart_send(num % 10 + '0');
+    }
+}
 
 /*
     async part
