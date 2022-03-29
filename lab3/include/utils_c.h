@@ -9,13 +9,11 @@
 
 
 /* string */
-
 int utils_str_compare(const char *a,const char *b);
 void utils_newline2end(char *str);
 char utils_int2char(int a);
 void utils_int2str_dec(int a, char *str);
 void utils_uint2str_dec(unsigned int num, char *str);
-void utils_uint2str_hex(unsigned int num, char *str);
 unsigned int utils_str2uint_dec(const char *str);
 void align(void *size, size_t s); // aligned to 4 byte
 size_t utils_strlen(const char *s);

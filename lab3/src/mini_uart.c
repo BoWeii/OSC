@@ -1,6 +1,9 @@
 #include "peripheral/mini_uart.h"
 #include "peripheral/gpio.h"
+#include "sprintf.h"
 #include "utils_c.h"
+#include <stddef.h>
+#include <stdarg.h>
 
 #define ENABLE_RECEIVE_INTERRUPTS_BIT (1 << 0)
 #define ENABLE_TRANSMIT_INTERRUPTS_BIT (1 << 1)
@@ -138,6 +141,17 @@ void uart_dec(unsigned int num){
         if(num >= 10) uart_dec(num / 10);
         uart_send(num % 10 + '0');
     }
+}
+
+void uart_printf(char* fmt, ...) {
+	char dst[100];
+    // __builtin_va_start(args, fmt): "..." is pointed by args
+    // __builtin_va_arg(args,int): ret=(int)*args;args++;return ret;
+    __builtin_va_list args;
+    __builtin_va_start(args,fmt);
+    unsigned int ret=vsprintf(dst,fmt,args);
+    uart_send_string(dst);
+    return ret;
 }
 
 /*

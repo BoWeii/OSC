@@ -36,8 +36,7 @@ void get_board_revision()
     mailbox[5] = 0; // value buffer
     // tags end
     mailbox[6] = END_TAG;
-    unsigned int a = mailbox_call(); // message passing procedure call, you should implement it following the 6 steps provided above.
-    char str[256];
+    mailbox_call(); // message passing procedure call, you should implement it following the 6 steps provided above.
     // printf("0x%x\n", mailbox[5]); // it should be 0xa020d3 for rpi3 b+
     uart_hex(mailbox[5]);
     uart_send_string("\n");
@@ -54,7 +53,7 @@ void get_arm_memory()
     mailbox[6] = 0; // value buffer
     // tags end
     mailbox[7] = END_TAG;
-    unsigned int a = mailbox_call(); // message passing procedure call, you should implement it following the 6 steps provided above.
+    mailbox_call(); // message passing procedure call, you should implement it following the 6 steps provided above.
     uart_send_string("Arm base address: ");
     uart_hex(mailbox[5]);
     uart_send_string("\n");

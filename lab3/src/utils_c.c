@@ -5,6 +5,7 @@
 /*
     string part
 */
+
 int utils_str_compare(const char *a,const char *b)
 {
     char aa, bb;
@@ -75,48 +76,6 @@ void utils_uint2str_dec(unsigned int num, char *str)
         *str = '0' + num / t;
         num = num % t;
         str++;
-    }
-    *str = '\0';
-}
-void utils_uint2str_hex(unsigned int num, char *str)
-{
-    // num=7114 digit=4
-    unsigned int temp = num;
-    int digit = -1;
-    *str = '0';
-    *str++;
-    *str = 'x';
-    *str++;
-    if (num == 0)
-    {
-        *str = '0';
-        str++;
-    }
-    else
-    {
-        while (temp > 0)
-        {
-            temp /= 16;
-            digit++;
-        }
-        for (int i = digit; i >= 0; i--)
-        {
-            int t = 1;
-            for (int j = 0; j < i; j++)
-            {
-                t *= 16;
-            }
-            if (num / t >= 10)
-            {
-                *str = '0' + num / t + 39;
-            }
-            else
-            {
-                *str = '0' + num / t;
-            }
-            num = num % t;
-            str++;
-        }
     }
     *str = '\0';
 }

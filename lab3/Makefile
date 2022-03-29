@@ -1,4 +1,4 @@
-CFLAG = -Iinclude -fno-stack-protector
+CFLAG = -Iinclude -Wall -ffreestanding -fno-stack-protector  -nostdlib -nostartfiles -mgeneral-regs-only
 K8=kernel8
 BL=bootloader
 LINKER=linker.ld
@@ -31,7 +31,7 @@ KERNEL_OBJS:=$(KER_C:%.c=%.o) \
 
 BL_OBJS:=$(BL_C:%.c=%.o) \
 		$(BL_S:%.s=%.o) \
-		src/mini_uart.o src/utils_c.o src/utils_s.o src/memzero.o
+		src/mini_uart.o src/utils_c.o src/utils_s.o src/memzero.o src/sprintf.o
 
 
 

@@ -7,7 +7,7 @@
 extern char *_dtb;
 void load_img()
 {
-    char *const kernel_addr = (char *)0x80000;
+    char * kernel_addr = (char *)0x80000;
     uart_send_string("Please sent the kernel image size:");
     char buffer[BUFFER_MAX_SIZE];
     // read_command(buffer);
