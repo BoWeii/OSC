@@ -27,6 +27,7 @@ USER1_OBJS:= $(USER1_S:%.s=%.o)
 
 OBJS:= $(SRC_C:%.c=%.o) \
 		$(SRC_S:%.s=%.o)\
+		rd.o
 
 
 KERNEL_OBJS:=$(KER_C:%.c=%.o) \
