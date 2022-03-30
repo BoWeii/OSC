@@ -26,12 +26,12 @@ USER1_S:=$(shell find users/user1/ -name '*.s')
 USER1_OBJS:= $(USER1_S:%.s=%.o) 
 
 OBJS:= $(SRC_C:%.c=%.o) \
-		$(SRC_S:%.s=%.o)\
+		$(SRC_S:%.s=%.o) \
 		rd.o
 
 
 KERNEL_OBJS:=$(KER_C:%.c=%.o) \
-		$(KER_S:%.s=%.o)\
+		$(KER_S:%.s=%.o)
 		
 		
 
