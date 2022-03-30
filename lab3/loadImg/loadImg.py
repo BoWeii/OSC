@@ -24,7 +24,7 @@ def send_img(ser,kernel):
 
 if __name__ == "__main__":
     ser = serial.Serial("/dev/ttyUSB0", BAUD_RATE, timeout=5)
-    send_img(ser,"../kernel8.img")
+    send_img(ser,"../build/kernel8.img")
 
     
 
