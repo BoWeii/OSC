@@ -143,7 +143,7 @@ void uart_dec(unsigned int num){
     }
 }
 
-void uart_printf(char* fmt, ...) {
+unsigned int uart_printf(char* fmt, ...) {
 	char dst[100];
     // __builtin_va_start(args, fmt): "..." is pointed by args
     // __builtin_va_arg(args,int): ret=(int)*args;args++;return ret;
@@ -151,7 +151,7 @@ void uart_printf(char* fmt, ...) {
     __builtin_va_start(args,fmt);
     unsigned int ret=vsprintf(dst,fmt,args);
     uart_send_string(dst);
-    return ret;
+    return ret ;
 }
 
 /*

@@ -17,5 +17,5 @@ void uart_handler();
 void test_uart_async();
 char uart_async_recv();
 void uart_async_send_string(char *str);
-void uart_printf(char* fmt, ...);
+unsigned int uart_printf(char* fmt, ...);
 #endif

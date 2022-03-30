@@ -68,6 +68,7 @@ int parse_struct(fdt_callback cb, uintptr_t cur_ptr, uintptr_t strings_ptr, uint
                 return -1;
         }
     }
+    return 0;
 }
 
 
@@ -132,4 +133,5 @@ int fdt_traverse(fdt_callback cb, void* _dtb)
     uintptr_t struct_ptr = dtb_ptr + get_le2be_uint(&(header->off_dt_struct));
     uintptr_t strings_ptr = dtb_ptr + get_le2be_uint(&(header->off_dt_strings));
     parse_struct(cb, struct_ptr, strings_ptr, totalsize);
+    return 0;
 }

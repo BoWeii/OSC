@@ -28,7 +28,7 @@ void load_img()
     unsigned int img_size = utils_str2uint_dec(buffer);
     uart_send_string("Start to load the kernel image... \n");
 
-    unsigned char *current = kernel_addr;
+    unsigned char *current = (unsigned char *)kernel_addr;
     while (img_size--)
     {
         *current = uart_recv();

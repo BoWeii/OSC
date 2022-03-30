@@ -14,24 +14,16 @@ void default_handler()
     unsigned long spsr = read_sysreg(spsr_el1);
     unsigned long elr = read_sysreg(elr_el1);
     unsigned long esr = read_sysreg(esr_el1);
-    uart_send_string("spsr_el1: ");
-    uart_hex(spsr);
-    uart_send('\n');
-    uart_send_string("elr_el1: ");
-    uart_hex(elr);
-    uart_send('\n');
-    uart_send_string("esr_el1: ");
-    uart_hex(esr);
-    uart_send_string("\n\n");
+    uart_printf("spsr_el1: %x\n",spsr);
+    uart_printf("elr_el1: %x\n",elr);
+    uart_printf("esr_el1: %x\n\n",esr);
     enable_interrupt();
 }
 
 void lower_irq_handler()
 {
     unsigned long current_time = get_current_time();
-    uart_send_string("After booting: ");
-    uart_dec(current_time);
-    uart_send_string(" seconds \n\n");
+    uart_printf("After booting: %d seconds\n\n",current_time);
     set_expired_time(2);
 }
 
@@ -41,15 +33,9 @@ void lower_sync_handler()
     unsigned long spsr = read_sysreg(spsr_el1);
     unsigned long elr = read_sysreg(elr_el1);
     unsigned long esr = read_sysreg(esr_el1);
-    uart_send_string("spsr_el1: ");
-    uart_hex(spsr);
-    uart_send('\n');
-    uart_send_string("elr_el1: ");
-    uart_hex(elr);
-    uart_send('\n');
-    uart_send_string("esr_el1: ");
-    uart_hex(esr);
-    uart_send_string("\n\n");
+    uart_printf("spsr_el1: %x\n",spsr);
+    uart_printf("elr_el1: %x\n",elr);
+    uart_printf("esr_el1: %x\n\n",esr);
     enable_interrupt();
 }
 
@@ -67,15 +53,9 @@ void curr_irq_handler()
         unsigned long current_time = get_current_time();
         uart_send_string("\nmessage :");
         timeout_queue_head->callback(timeout_queue_head->msg);
-        uart_send_string("\ncurrent time :");
-        uart_dec(current_time);
-        uart_send_string("s\n");
-        uart_send_string("command executed time :");
-        uart_dec(timeout_queue_head->register_time);
-        uart_send_string("s\n");
-        uart_send_string("command duration time :");
-        uart_dec(timeout_queue_head->duration);
-        uart_send_string("s\n\n");
+        uart_printf("\ncurrent time : %ds\n",current_time);
+        uart_printf("command executed time : %ds\n",timeout_queue_head->register_time);
+        uart_printf("command duration time : %ds\n\n",timeout_queue_head->duration);
 
         timeout_event *next = timeout_queue_head->next;
         if (next)
