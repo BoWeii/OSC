@@ -14,7 +14,7 @@ void set_timeout(char *message, char *_time);
 void print_message(char *msg);
 void add_timer(timer_callback cb,char *msg, unsigned long duraction);
 void timeout_event_init();
-
+void timer_handler(void *arg);
 
 typedef struct timeout_event {
   unsigned long register_time;

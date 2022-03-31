@@ -108,3 +108,27 @@ void add_timer(timer_callback cb, char *msg, unsigned long duration)
         }
     }
 }
+
+void timer_handler(void *arg)
+{
+   unsigned long current_time = get_current_time();
+    uart_send_string("\nmessage :");
+    timeout_queue_head->callback(timeout_queue_head->msg);
+    uart_printf("\ncurrent time : %ds\n", current_time);
+    uart_printf("command executed time : %ds\n", timeout_queue_head->register_time);
+    uart_printf("command duration time : %ds\n\n", timeout_queue_head->duration);
+
+    timeout_event *next = timeout_queue_head->next;
+    if (next)
+    {
+       next->prev = 0;
+        timeout_queue_head = next;
+        core_timer_enable();
+        set_expired_time(next->register_time + next->duration - get_current_time());
+    }
+    else // no other event
+    {
+        timeout_queue_head = timeout_queue_tail = 0;
+        core_timer_disable();
+    }
+}

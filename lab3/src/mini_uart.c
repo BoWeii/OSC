@@ -4,6 +4,7 @@
 #include "utils_c.h"
 #include <stddef.h>
 #include <stdarg.h>
+#include "mini_uart.h"
 
 #define ENABLE_RECEIVE_INTERRUPTS_BIT (1 << 0)
 #define ENABLE_TRANSMIT_INTERRUPTS_BIT (1 << 1)
@@ -15,6 +16,8 @@ char read_buf[BUFFER_MAX_SIZE];
 char write_buf[BUFFER_MAX_SIZE];
 int read_buf_start, read_buf_end;
 int write_buf_start, write_buf_end;
+
+
 
 void delay(unsigned int clock)
 {
@@ -47,7 +50,6 @@ void uart_init()
     *GPPUDCLK0 = (1u << 14) | (1u << 15);
     delay(150u);
     *GPPUDCLK0 = 0u;
-
     *AUX_ENABLE = 1u;        // Enable mini uart (this also enables access to its registers)
     *AUX_MU_CNTL_REG = 0u;   // Disable auto flow control and disable receiver and transmitter (for now)
     *AUX_MU_IER_REG = 1u;    // Enable receive
@@ -135,31 +137,37 @@ void uart_hex(unsigned int d)
         uart_send(n);
     }
 }
-void uart_dec(unsigned int num){
-    if(num == 0) uart_send('0');
-    else{
-        if(num >= 10) uart_dec(num / 10);
+void uart_dec(unsigned int num)
+{
+    if (num == 0)
+        uart_send('0');
+    else
+    {
+        if (num >= 10)
+            uart_dec(num / 10);
         uart_send(num % 10 + '0');
     }
 }
 
-unsigned int uart_printf(char* fmt, ...) {
-	char dst[100];
+unsigned int uart_printf(char *fmt, ...)
+{
+    char dst[100];
     // __builtin_va_start(args, fmt): "..." is pointed by args
     // __builtin_va_arg(args,int): ret=(int)*args;args++;return ret;
     __builtin_va_list args;
-    __builtin_va_start(args,fmt);
-    unsigned int ret=vsprintf(dst,fmt,args);
+    __builtin_va_start(args, fmt);
+    unsigned int ret = vsprintf(dst, fmt, args);
     uart_send_string(dst);
-    return ret ;
+    return ret;
 }
 
 /*
     async part
 */
 
-void uart_handler()
+void uart_handler(void *arg)
 {
+    Reg *ier=(Reg *)arg;
     disable_uart_interrupt();
     int RX = (*AUX_MU_IIR_REG & 0x4);
     int TX = (*AUX_MU_IIR_REG & 0x2);
@@ -176,7 +184,7 @@ void uart_handler()
         {
             if (write_buf_start == write_buf_end)
             {
-                clear_transmit_interrupt();
+                *ier&=~(0x2);
                 break;
             }
             char c = write_buf[write_buf_start++];
@@ -185,12 +193,14 @@ void uart_handler()
                 write_buf_start = 0;
         }
     }
+    *AUX_MU_IER_REG |= *ier;
     enable_uart_interrupt();
 }
 
 char uart_async_recv()
 {
     // wait until there are new data
+    *AUX_MU_IER_REG |= (0x1);
     while (read_buf_start == read_buf_end)
     {
         asm volatile("nop");
@@ -219,6 +229,21 @@ void uart_async_send_string(char *str)
     set_transmit_interrupt();
 }
 
+void uart_async_send(char c)
+{
+    if (c == '\n')
+    {
+        write_buf[write_buf_end++] = '\r';
+        write_buf[write_buf_end++] = '\n';
+        set_transmit_interrupt();
+        return;
+    }
+    write_buf[write_buf_end++] = c;
+    if (write_buf_end == BUFFER_MAX_SIZE)
+        write_buf_end = 0;
+    set_transmit_interrupt();
+}
+
 void test_uart_async()
 {
     enable_uart_interrupt();
@@ -228,6 +253,7 @@ void test_uart_async()
     while (1)
     {
         buffer[index] = uart_async_recv();
+        // uart_async_send(buffer[index]);
         if (buffer[index] == '\n')
         {
             break;
@@ -236,6 +262,5 @@ void test_uart_async()
     }
     buffer[index + 1] = '\0';
     uart_async_send_string(buffer);
-    // uart_async_send_string("testWTF\r\n");
     disable_uart_interrupt();
 }

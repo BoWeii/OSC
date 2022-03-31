@@ -13,9 +13,10 @@ void uart_send(const char c);
 char uart_recv();
 void uart_hex(unsigned int d);
 void uart_dec(unsigned int num);
-void uart_handler();
+void uart_handler(void *arg);
 void test_uart_async();
 char uart_async_recv();
 void uart_async_send_string(char *str);
 unsigned int uart_printf(char* fmt, ...);
+typedef unsigned int Reg;
 #endif

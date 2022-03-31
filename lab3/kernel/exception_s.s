@@ -95,7 +95,7 @@ _el1_curr_el_spx_sync:
   
 _el1_curr_el_spx_irq:
   save_all
-  bl curr_irq_handler
+  bl curr_irq_handler_decouple
   load_all
   eret
 
