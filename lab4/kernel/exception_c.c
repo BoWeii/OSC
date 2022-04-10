@@ -6,7 +6,6 @@
 #include "allocator.h"
 #define AUX_IRQ (1 << 29)
 
-
 void enable_interrupt() { asm volatile("msr DAIFClr, 0xf"); }
 void disable_interrupt() { asm volatile("msr DAIFSet, 0xf"); }
 
@@ -44,9 +43,10 @@ void lower_sync_handler()
 void curr_irq_handler()
 {
     disable_interrupt();
-    unsigned int uart = (*IRQ_PENDING_1 & AUX_IRQ);
+    unsigned int irq_is_pending = (*IRQ_PENDING_1 & AUX_IRQ);
+    unsigned int uart = (*AUX_MU_IIR_REG & 0x1) == 0;
     unsigned int core_timer = (*CORE0_INTERRUPT_SOURCE & 0x2);
-    if (uart)
+    if (irq_is_pending && uart)
     {
         uart_handler();
     }

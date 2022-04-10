@@ -81,5 +81,5 @@ qe: $(BUILD)$(K8).img
 clean:
 	$(RM) $(BUILD_ELF) $(CPIO) \
 	$(OBJS) $(KERNEL_OBJS) $(BL_OBJS) $(USER1_OBJS) \
-	# $(BUILD_IMG) $(ARC_IMG)
+	$(BUILD_IMG) $(ARC_IMG)
 	

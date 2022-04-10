@@ -8,6 +8,7 @@
 #include "exception_c.h"
 #include "timer.h"
 #include "dtb.h"
+#include "mm.h"
 #include <stddef.h>
 #define BUFFER_MAX_SIZE 256u
 #define COMMNAD_LENGTH_MAX 20u
@@ -32,19 +33,20 @@ void read_command(char *buffer)
     uart_send('\r');
 }
 
-void parse_arg(char *buffer, int argc, int *argi)
+void parse_arg(char *buffer, int *argi)
 {
     int i = 0;
-    int argi_index=0;
-    argi[argi_index]=i;
-    while (buffer[i]!='\0')
+    int argi_index = 0;
+    argi[argi_index] = i;
+    while (buffer[i] != '\0')
     {
-      if(buffer[i]==' '){
-          buffer[i]='\0';
-          argi[++argi_index]=++i;
-          continue;
-      }
-      i++;
+        if (buffer[i] == ' ')
+        {
+            buffer[i] = '\0';
+            argi[++argi_index] = ++i;
+            continue;
+        }
+        i++;
     }
 }
 
@@ -83,9 +85,8 @@ void info()
 
 void parse_command(char *buffer)
 {
-    int argc = 0;
     int argi[BUFFER_MAX_SIZE];
-    parse_arg(buffer, argc, argi);
+    parse_arg(buffer, argi);
     if (utils_str_compare(buffer, "") == 0)
     { // enter empty
         return;
@@ -137,6 +138,14 @@ void parse_command(char *buffer)
     {
         set_timeout(&buffer[argi[1]], &buffer[argi[2]]);
     }
+    else if (utils_str_compare(buffer, "buddy") == 0)
+    {
+        test_buddy();
+    }
+    else if (utils_str_compare(buffer, "dynamic") == 0)
+    {
+        test_dynamic_alloc();
+    }
     else
     {
         uart_send_string("commnad '");
@@ -145,11 +154,18 @@ void parse_command(char *buffer)
     }
 }
 
+void clear_buffer(char *buf){
+    for(int i=0;i<BUFFER_MAX_SIZE;i++){
+        buf[i]='\0';
+    }
+}
+
 void shell()
 {
     while (1)
     {
         char buffer[BUFFER_MAX_SIZE];
+        clear_buffer(buffer);
         uart_send_string("$ ");
         read_command(buffer);
         parse_command(buffer);
