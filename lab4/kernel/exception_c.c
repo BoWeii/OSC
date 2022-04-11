@@ -3,7 +3,6 @@
 #include "timer.h"
 #include "peripheral/mini_uart.h"
 #include "exception_c.h"
-#include "allocator.h"
 #define AUX_IRQ (1 << 29)
 
 void enable_interrupt() { asm volatile("msr DAIFClr, 0xf"); }
@@ -70,7 +69,7 @@ task *task_queue_head = 0, *task_queue_tail = 0;
 
 void add_task(task_callback cb, void *arg, unsigned int priority)
 {
-    task *new_task = (task *)malloc(sizeof(task));
+    task *new_task = (task *)smalloc(sizeof(task));
     new_task->priority = priority;
     new_task->callback = cb;
     new_task->arg = arg;
@@ -138,7 +137,7 @@ void curr_irq_handler_decouple()
     unsigned int core_timer = (*CORE0_INTERRUPT_SOURCE & 0x2);
     if (uart)
     {
-        Reg *reg = (Reg *)malloc(sizeof(Reg));
+        Reg *reg = (Reg *)smalloc(sizeof(Reg));
         *reg = *AUX_MU_IER_REG;
         add_task(uart_handler, reg, 3);
         *AUX_MU_IER_REG &= ~(0x3);

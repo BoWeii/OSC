@@ -25,7 +25,7 @@ master:
     sub    x21, x21, x20
     bl     memzero
 
-    mov    sp, #0x200000  // 2MB
+    mov    sp, #0x800000  // 2MB
     bl     kernel_main
     
 

@@ -1,6 +1,6 @@
 #include "timer.h"
 #include "utils_s.h"
-#include "allocator.h"
+#include "mm.h"
 #include "mini_uart.h"
 #include "utils_c.h"
 timeout_event *timeout_queue_head, *timeout_queue_tail;
@@ -56,7 +56,7 @@ void timeout_event_init()
 
 void add_timer(timer_callback cb, char *msg, unsigned long duration)
 {
-    timeout_event *new_event = (timeout_event *)malloc(sizeof(timeout_event));
+    timeout_event *new_event = (timeout_event *)kmalloc(sizeof(timeout_event));
     new_event->register_time = get_current_time();
     new_event->duration = duration;
     new_event->callback = cb;

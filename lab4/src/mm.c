@@ -2,11 +2,18 @@
 #include "mini_uart.h"
 #include "list.h"
 #include "utils_c.h"
+#include "_cpio.h"
+#include "dtb.h"
 
 #define DEBUG
 
-#define FRAME_BASE ((uintptr_t)0x10000000)
-#define FRAME_END ((uintptr_t)0x20000000)
+// #define FRAME_BASE ((uintptr_t)0x10000000)
+// #define FRAME_END ((uintptr_t)0x20000000)
+
+#define FRAME_BASE ((uintptr_t)0x0)
+// get from mailbox's arm memory
+#define FRAME_END ((uintptr_t)0x3b400000)
+
 #define PAGE_SIZE 0x1000 // 4KB
 #define FRAME_BINS_SIZE 12
 #define MAX_ORDER (FRAME_BINS_SIZE - 1)
@@ -25,6 +32,16 @@
 #define IS_INUSE(frame) (frame.flag & FRAME_INUSE)
 #define IS_MEM_CHUNK(frame) (frame.flag & FRAME_MEM_CHUNK)
 
+// for mm_int
+extern char _skernel, _ekernel;
+extern void *_dtb_ptr;
+
+FrameFlag *frames;
+list frame_bins[FRAME_BINS_SIZE];
+Chunk *chunk_bins[CHUNK_BINS];
+
+unsigned long *smalloc_cur = (unsigned long *)STARTUP_MEM_START;
+
 ////////////////////////////////////////////////////////////////////////////////////////////////
 //                                          utils                                             //
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -41,15 +58,64 @@ static unsigned align_up_exp(unsigned n)
 }
 static int addr2idx(void *addr)
 {
-    // return (((uintptr_t)addr & -PAGE_SIZE) - FRAME_BASE) / PAGE_SIZE;
-    return ((uintptr_t)addr - FRAME_BASE) / PAGE_SIZE;
+    return (((uintptr_t)addr & -PAGE_SIZE) - FRAME_BASE) / PAGE_SIZE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+//                                          startUp                                           //
+////////////////////////////////////////////////////////////////////////////////////////////////
+
+void *smalloc(size_t size)
+{
+    align(&size, 4); // allocated the memory size is mutiple of 4 byte;
+    unsigned long *smalloc_ret = smalloc_cur;
+    if ((uint64_t)smalloc_cur + size > (uint64_t)STARTUP_MEM_END)
+    {
+        uart_printf("[!] No enough space!\r\n");
+        return NULL;
+    }
+    smalloc_cur += (unsigned int)size;
+    // uart_printf("return addr at %x\n",smalloc_ret);
+    return smalloc_ret;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+//                                          others                                             //
+////////////////////////////////////////////////////////////////////////////////////////////////
+
+void mm_init()
+{
+    init_buddy();
+    memory_reserve((uintptr_t)0, (uintptr_t)0x1000); // Spin tables for multicore boot
+
+    memory_reserve((uintptr_t)&_skernel, (uintptr_t)&_ekernel); // Kernel image in the physical memory
+
+    fdt_traverse(get_initramfs_addr, _dtb_ptr);
+    memory_reserve((uintptr_t)initramfs_start, (uintptr_t)initramfs_end); // Kernel image in the physical memory
+
+    memory_reserve((uintptr_t)STARTUP_MEM_START, (uintptr_t)STARTUP_MEM_END); // simple simple_allocator
+
+    memory_reserve(dtb_start, dtb_end); // Devicetree
+
+    merge_useful_pages();
+}
+
+void memory_reserve(uintptr_t start, uintptr_t end)
+{
+    start = start & ~(PAGE_SIZE - 1);
+    end = align_up(end, PAGE_SIZE);
+    for (uintptr_t i = start; i < end; i += PAGE_SIZE)
+    {
+        int idx = addr2idx((void *)i);
+        frames[idx].flag |= FRAME_INUSE;
+        frames[idx].order = 0;
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 //                                   buddy system                                             //
 ////////////////////////////////////////////////////////////////////////////////////////////////
-FrameFlag frames[FRAME_ARRAY_SIZE];
-list frame_bins[FRAME_BINS_SIZE];
+
 static int pages_to_frame_order(unsigned pages)
 {
     pages = align_up_exp(pages);
@@ -58,22 +124,49 @@ static int pages_to_frame_order(unsigned pages)
 
 void init_buddy()
 {
+    frames = (FrameFlag *)smalloc(sizeof(FrameFlag) * FRAME_ARRAY_SIZE);
     for (int i = 0; i < FRAME_BINS_SIZE; i++)
     {
         list_init(&frame_bins[i]);
     }
-
-    list *victim;
-    for (uint64_t i = 0; i < FRAME_ARRAY_SIZE; i += 1 << MAX_ORDER)
+    for (int i = 0; i < FRAME_ARRAY_SIZE; i++)
     {
-        frames[i].order = MAX_ORDER;
+        frames[i].flag = 0;
+        frames[i].order = 0;
+    }
+}
 
-        victim = (list *)(FRAME_BASE + i * PAGE_SIZE);
-        insert_tail(&frame_bins[MAX_ORDER], victim);
+void merge_useful_pages()
+{
+    for (int order = 0; order < MAX_ORDER; order++)
+    {
+        int page_idx = 0;
+        void *page_addr = 0;
+        while (1)
+        {
+            if (!IS_INUSE(frames[page_idx]))
+            {
+                int buddy_page_idx = page_idx ^ (1 << order);
+                if (!IS_INUSE(frames[buddy_page_idx]) &&
+                    order == frames[buddy_page_idx].order)
+                {
+                    insert_tail(&frame_bins[order + 1], page_addr);
+                    frames[page_idx].order = order + 1;
+                }
+                else
+                {
+                    insert_tail(&frame_bins[order], page_addr);
+                    frames[page_idx].order = order;
+                }
+            }
 
-#ifdef DEBUG
-        uart_printf("insert frame at %x\n", (unsigned long)victim);
-#endif
+            page_idx += (1 << (order + 1));
+            page_addr = (void *)(FRAME_BASE + page_idx * PAGE_SIZE);
+            if (page_idx >= FRAME_ARRAY_SIZE)
+            {
+                break;
+            }
+        }
     }
 }
 
@@ -87,41 +180,56 @@ static void *split_frames(int order, int target_order)
 
     for (int i = order; i > target_order; i--)
     { /* insert splitted frame to bin list */
-        list *s = (list *)((char *)ptr + ORDER2SIZE(i - 1));
+        list *half_right = (list *)((char *)ptr + ORDER2SIZE(i - 1));
 
-        insert_head(&frame_bins[i - 1], s);
-        frames[((uintptr_t)s - FRAME_BASE) / PAGE_SIZE].order = i - 1;
+        insert_head(&frame_bins[i - 1], half_right);
+        frames[((uintptr_t)half_right - FRAME_BASE) / PAGE_SIZE].order = i - 1;
 
 #ifdef DEBUG
-        uart_printf("insert frame at %x\n", (unsigned long)s);
+        uart_printf("insert frame at %x\n", (unsigned long)half_right);
 #endif
     }
     int idx = addr2idx(ptr);
     frames[idx].order = target_order;
-    frames[idx].flag = FRAME_INUSE;
+    frames[idx].flag |= FRAME_INUSE;
     return ptr;
 }
 
 void *alloc_pages(unsigned int pages)
 {
-    int targer_order = pages_to_frame_order(pages);
-
-    for (int i = targer_order; i < FRAME_BINS_SIZE; i++)
+    int target_order = pages_to_frame_order(pages);
+    if (frame_bins[target_order].next != &frame_bins[target_order])
     {
-        if (frame_bins[i].next != &frame_bins[i])
+        list *ptr = remove_head(&frame_bins[target_order]);
+#ifdef DEBUG
+        uart_printf("return page at: %x\n", (unsigned long)ptr);
+#endif
+        int idx = addr2idx(ptr);
+        frames[idx].order = target_order;
+        frames[idx].flag |= FRAME_INUSE;
+        return ptr;
+    }
+    else
+    {
+        for (int i = target_order; i < FRAME_BINS_SIZE; i++)
         {
-            return split_frames(i, targer_order);
+            if (frame_bins[i].next != &frame_bins[i])
+            {
+                return split_frames(i, target_order);
+            }
         }
     }
+
+    uart_send_string("alloc page return NULL");
     return NULL;
 }
 
-static void free_pages(void *victim)
+void free_pages(void *victim)
 {
     int page_idx = ((uintptr_t)victim - FRAME_BASE) / PAGE_SIZE;
     if (!IS_INUSE(frames[page_idx]))
     {
-        uart_send_string("Error! double free the memory");
+        uart_printf("Error! double free the memory at %x", (uintptr_t)victim);
         return;
     }
     unsigned int order = frames[page_idx].order;
@@ -156,8 +264,6 @@ static void free_pages(void *victim)
 //                                          chunks                                            //
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
-Chunk *chunk_bins[CHUNK_BINS];
-
 static int size_to_chunk_order(unsigned int size)
 {
     size = align_up_exp(size);
@@ -175,6 +281,7 @@ static void *get_chunk(uint32_t size)
         chunk_bins[order] = chunk_bins[order]->next;
         int idx = addr2idx(ptr);
         frames[idx].ref_count += 1;
+
 #ifdef DEBUG
         uart_printf("detach chunk at %x\n", (unsigned long)ptr);
 #endif
@@ -204,7 +311,7 @@ static void alloc_chunk(void *mem, int size)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
-//                           dynamic memory allocator                                         //
+//                           dynamic memory simple_allocator                                         //
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
 void *kmalloc(unsigned int size)
@@ -269,7 +376,7 @@ void kfree(void *ptr)
 void test_buddy()
 {
     int test_size = 5;
-    int *a[test_size];
+    void *a[test_size];
     uart_send_string("\n\n-----  Malloc  -----\n");
     for (int i = 0; i < test_size; i++)
     {
@@ -282,8 +389,9 @@ void test_buddy()
     }
 }
 
-struct test_b{
-    double b1,b2,b3,b4,b5,b6;
+struct test_b
+{
+    double b1, b2, b3, b4, b5, b6;
 };
 
 void test_dynamic_alloc()
@@ -293,8 +401,7 @@ void test_dynamic_alloc()
     uart_send_string("allocate a2\n");
     int *a2 = kmalloc(sizeof(int));
     uart_send_string("allocate b\n");
-    struct test_b *b=kmalloc(sizeof(struct test_b));
-
+    struct test_b *b = kmalloc(sizeof(struct test_b));
 
     uart_send_string("free a1\n");
     kfree(a1);

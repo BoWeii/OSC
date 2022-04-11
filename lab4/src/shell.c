@@ -4,7 +4,6 @@
 #include "utils_s.h"
 #include "peripheral/mailbox.h"
 #include "_cpio.h"
-#include "allocator.h"
 #include "exception_c.h"
 #include "timer.h"
 #include "dtb.h"
@@ -70,6 +69,10 @@ void help()
     uart_send_string("test uart async send and recv\n");
     uart_send_string("set     : ");
     uart_send_string("set the timeout (set message second)\n");
+    uart_send_string("buddy   : ");
+    uart_send_string("test the page allocate and free\n");
+    uart_send_string("dynamic : ");
+    uart_send_string("test the dynamic memory simple_allocator\n");
 }
 
 void hello()
@@ -88,7 +91,7 @@ void parse_command(char *buffer)
     int argi[BUFFER_MAX_SIZE];
     parse_arg(buffer, argi);
     if (utils_str_compare(buffer, "") == 0)
-    { // enter empty
+    {
         return;
     }
     else if (utils_str_compare(buffer, "help") == 0)
@@ -154,9 +157,11 @@ void parse_command(char *buffer)
     }
 }
 
-void clear_buffer(char *buf){
-    for(int i=0;i<BUFFER_MAX_SIZE;i++){
-        buf[i]='\0';
+void clear_buffer(char *buf)
+{
+    for (int i = 0; i < BUFFER_MAX_SIZE; i++)
+    {
+        buf[i] = '\0';
     }
 }
 

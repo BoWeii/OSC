@@ -1,6 +1,5 @@
 #include "_cpio.h"
 #include "utils_c.h"
-#include "allocator.h"
 #include "mini_uart.h"
 #include "timer.h"
 
@@ -26,7 +25,7 @@ unsigned int hex2dec(char *s)
 
 char *findFile(char *name)
 {
-    char *addr = cpio_addr;
+    char *addr = initramfs_start;
     while (utils_str_compare((char *)(addr + sizeof(cpio_header)), "TRAILER!!!") != 0)
     {
         if ((utils_str_compare((char *)(addr + sizeof(cpio_header)), name) == 0))
@@ -46,7 +45,7 @@ char *findFile(char *name)
 }
 void cpio_ls()
 {
-    char *addr = cpio_addr;
+    char *addr = initramfs_start;
     while (utils_str_compare((char *)(addr + sizeof(cpio_header)), "TRAILER!!!") != 0)
     {
         cpio_header *header = (cpio_header *)addr;
