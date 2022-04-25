@@ -4,11 +4,10 @@
 #include "utils_c.h"
 #include "_cpio.h"
 #include "dtb.h"
+#include "exception_c.h"
 
-#define DEBUG
+// #define DEBUG
 
-// #define FRAME_BASE ((uintptr_t)0x10000000)
-// #define FRAME_END ((uintptr_t)0x20000000)
 
 #define FRAME_BASE ((uintptr_t)0x0)
 // get from mailbox's arm memory
@@ -241,7 +240,7 @@ void free_pages(void *victim)
            order == frames[buddy_page_idx].order)
     {
         void *buddy_victim = (void *)(FRAME_BASE + buddy_page_idx * PAGE_SIZE);
-        remove((list *)buddy_victim);
+        unlink((list *)buddy_victim);
 
 #ifdef DEBUG
         uart_printf("merge buddy frame: %x \n", (unsigned long)buddy_victim);
@@ -323,6 +322,9 @@ void *kmalloc(unsigned int size)
     }
 
     size = size < CHUNK_MIN_SIZE ? CHUNK_MIN_SIZE : size;
+
+    size_t flag = disable_irq();
+
     void *ptr;
     if (align_up_exp(size) < PAGE_SIZE) // just allocate a small chunk
     {
@@ -341,6 +343,7 @@ void *kmalloc(unsigned int size)
         unsigned int pages = aligned_page_size / PAGE_SIZE;
         ptr = alloc_pages(pages);
     }
+    irq_restore(flag);
     return ptr;
 }
 void kfree(void *ptr)
@@ -351,7 +354,7 @@ void kfree(void *ptr)
         uart_send_string("Error! kfree wrong address\n");
         return;
     }
-
+    size_t flag = disable_irq();
     if (IS_MEM_CHUNK(frames[idx]))
     {
         int order = frames[idx].chunk_order;
@@ -367,6 +370,8 @@ void kfree(void *ptr)
     {
         free_pages(ptr);
     }
+    irq_restore(flag);
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////

@@ -10,6 +10,7 @@
 
 /* string */
 int utils_str_compare(const char *a,const char *b);
+int utils_strncmp(const char *a, const char *b, size_t n) ;
 void utils_newline2end(char *str);
 char utils_int2char(int a);
 void utils_int2str_dec(int a, char *str);
@@ -23,5 +24,9 @@ uint32_t align_up(uint32_t size, int alignment);
 void set(long addr, unsigned int value);
 void reset(int tick);
 void cancel_reset();
+
+/* others */
+void delay(unsigned int clock);
+void memcpy(void *dst, const void *src, size_t n);
 
 #endif

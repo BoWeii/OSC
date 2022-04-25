@@ -1,10 +1,13 @@
 #ifndef _EXCEPTION_C_H
 #define _EXCEPTION_C_H
-
+#include <stddef.h>
 typedef void (*task_callback)(void *);
 
 void enable_interrupt();
 void disable_interrupt();
+size_t disable_irq();
+void irq_restore(size_t flag);
+
 void default_handler();
 void lower_sync_handler();
 void curr_irq_handler();

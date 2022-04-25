@@ -20,6 +20,12 @@ int utils_str_compare(const char *a,const char *b)
     } while (aa == bb);
     return aa - bb;
 }
+
+int utils_strncmp(const char *a, const char *b, size_t n) {
+  size_t i = 0;
+  while (i < n-1 && a[i] == b[i] && a[i] != '\0' && b[i] != '\0') i++;
+  return a[i] - b[i];
+}
 void utils_newline2end(char *str)
 {
     while (*str != '\0')
@@ -124,7 +130,7 @@ void cancel_reset()
     others
 */
 
-void align(void *size, size_t s) 
+void align(void *size, size_t s)
 {
     unsigned int *x = (unsigned int *)size;
     if ((*x) & (s-1))
@@ -135,4 +141,21 @@ void align(void *size, size_t s)
 
 uint32_t align_up(uint32_t size, int alignment) {
   return (size + alignment - 1) & -alignment;
+}
+
+void delay(unsigned int clock)
+{
+    while (clock--)
+    {
+        asm volatile("nop");
+    }
+}
+
+void memcpy(void *dst, const void *src, size_t n) {
+  char *_dst = dst;
+  const char *_src = src;
+
+  while(n--) {
+    *_dst++ = *_src++;
+  }
 }

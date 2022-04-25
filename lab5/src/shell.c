@@ -8,11 +8,49 @@
 #include "timer.h"
 #include "dtb.h"
 #include "mm.h"
+#include "thread.h"
 #include <stddef.h>
 #define BUFFER_MAX_SIZE 256u
 #define COMMNAD_LENGTH_MAX 20u
 
 extern void *_dtb_ptr;
+
+int split(const char *buf, char *outbuf[], int n)
+{
+    const char *ps, *pe;
+    int idx = 0;
+    ps = pe = buf;
+
+    while (idx < n)
+    {
+        while (*pe && *pe != ' ')
+        {
+            pe++;
+        }
+
+        int size = pe - ps;
+        if (size)
+        {
+            outbuf[idx] = kmalloc(size + 1);
+            memcpy(outbuf[idx], ps, size);
+            outbuf[idx][size] = '\0';
+            idx++;
+        }
+
+        if (*pe)
+        {
+            while (*pe == ' ')
+                pe++;
+            ps = pe;
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    return idx;
+}
 
 void read_command(char *buffer)
 {
@@ -88,8 +126,7 @@ void info()
 
 void parse_command(char *buffer)
 {
-    int argi[BUFFER_MAX_SIZE];
-    parse_arg(buffer, argi);
+    // int argi[BUFFER_MAX_SIZE];
     if (utils_str_compare(buffer, "") == 0)
     {
         return;
@@ -102,7 +139,7 @@ void parse_command(char *buffer)
     {
         hello();
     }
-        else if (utils_str_compare(buffer, "ls") == 0)
+    else if (utils_str_compare(buffer, "ls") == 0)
     {
         cpio_ls();
     }
@@ -113,12 +150,17 @@ void parse_command(char *buffer)
         read_command(buffer);
         cpio_cat(buffer);
     }
-        else if (utils_str_compare(buffer, "exe") == 0)
+    else if (utils_str_compare(buffer, "exe") == 0)
     {
         uart_send_string("program name: ");
         char buffer[BUFFER_MAX_SIZE];
         read_command(buffer);
         cpio_load_program(buffer);
+    }
+    else if (utils_str_compare(buffer, "thread") == 0)
+    {
+        test_thread();
+        uart_async_send_string("exit the test_thread\n");
     }
     else if (utils_str_compare(buffer, "reboot") == 0)
     {
@@ -129,6 +171,10 @@ void parse_command(char *buffer)
     {
         info();
     }
+    else if (utils_str_compare(buffer, "wtf") == 0)
+    {
+        uart_printf("run queue task=%d \n", get_the_cur_count());
+    }
     else if (utils_str_compare(buffer, "dtb") == 0)
     {
         fdt_traverse(print_dtb, _dtb_ptr);
@@ -138,9 +184,12 @@ void parse_command(char *buffer)
     {
         test_uart_async();
     }
-    else if (utils_str_compare(buffer, "set") == 0)
+    else if (utils_strncmp(buffer, "set", 3) == 0)
     {
-        set_timeout(&buffer[argi[1]], &buffer[argi[2]]);
+        char *args[3];
+        split(buffer, args, 3);
+        unsigned long time = (unsigned long)utils_str2uint_dec(args[2]);
+        set_timeout(args[1], S(time));
     }
     else if (utils_str_compare(buffer, "buddy") == 0)
     {
@@ -168,6 +217,7 @@ void clear_buffer(char *buf)
 
 void shell()
 {
+    enable_interrupt();
     while (1)
     {
         char buffer[BUFFER_MAX_SIZE];

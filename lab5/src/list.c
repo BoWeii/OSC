@@ -37,11 +37,11 @@ list *remove_tail(list *head) {
     return ptr;
 }
 
-void remove(list *node) {
+void unlink(list *node) {
     list *next, *prev;
     next = node->next;
     prev = node->prev;
-    
+
     next->prev = prev;
     prev->next = next;
 }

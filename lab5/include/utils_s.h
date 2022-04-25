@@ -23,6 +23,6 @@
 
 void branchAddr(void *addr);
 int get_el();
-
+void switch_to(void *, void *);
 
 #endif

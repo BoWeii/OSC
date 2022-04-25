@@ -18,14 +18,6 @@ int read_buf_start, read_buf_end;
 int write_buf_start, write_buf_end;
 
 
-
-void delay(unsigned int clock)
-{
-    while (clock--)
-    {
-        asm volatile("nop");
-    }
-}
 void enable_uart_interrupt() { *ENB_IRQS1 = AUX_IRQ; }
 
 void disable_uart_interrupt() { *DISABLE_IRQS1 = AUX_IRQ; }
@@ -62,6 +54,7 @@ void uart_init()
 
     read_buf_start = read_buf_end = 0;
     write_buf_start = write_buf_end = 0;
+    // enable_uart_interrupt();
 }
 
 void uart_send(const char c)

@@ -3,10 +3,24 @@
 #include "timer.h"
 #include "peripheral/mini_uart.h"
 #include "exception_c.h"
+#include "thread.h"
 #define AUX_IRQ (1 << 29)
 
 void enable_interrupt() { asm volatile("msr DAIFClr, 0xf"); }
 void disable_interrupt() { asm volatile("msr DAIFSet, 0xf"); }
+size_t disable_irq()
+{
+    size_t flags;
+    asm(
+        "mrs %0, DAIF\t\n"
+        "msr DAIFSet, 0x2"
+        : "=r"(flags));
+    return flags;
+}
+void irq_restore(size_t flag)
+{
+    asm("msr DAIF, %0" ::"r"(flag));
+}
 
 void default_handler()
 {
@@ -41,12 +55,14 @@ void lower_sync_handler()
 
 void curr_irq_handler()
 {
-    disable_interrupt();
+    // size_t flags = read_sysreg(DAIF);
+    // uart_printf("iqr handle flags=%x\n", flags & 0b1111000000);
     unsigned int irq_is_pending = (*IRQ_PENDING_1 & AUX_IRQ);
     unsigned int uart = (*AUX_MU_IIR_REG & 0x1) == 0;
     unsigned int core_timer = (*CORE0_INTERRUPT_SOURCE & 0x2);
     if (irq_is_pending && uart)
     {
+
         uart_handler();
     }
     else if (core_timer)
@@ -57,9 +73,7 @@ void curr_irq_handler()
 
 void curr_sync_handler(unsigned long esr_el1, unsigned long elr_el1)
 {
-    disable_interrupt();
     return;
-    enable_interrupt();
 }
 
 /*
