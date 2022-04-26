@@ -1,5 +1,6 @@
 #include "_cpio.h"
 #include "utils_c.h"
+#include "dtb.h"
 #include "mini_uart.h"
 #include "timer.h"
 

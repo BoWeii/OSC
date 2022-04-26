@@ -217,7 +217,6 @@ void clear_buffer(char *buf)
 
 void shell()
 {
-    enable_interrupt();
     while (1)
     {
         char buffer[BUFFER_MAX_SIZE];

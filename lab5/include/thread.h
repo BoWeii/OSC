@@ -12,7 +12,7 @@ typedef enum
     TASK_STOPPED
 } state_t;
 
-typedef struct cpu_context
+struct cpu_context
 {
     unsigned long x19;
     unsigned long x20;
@@ -27,26 +27,24 @@ typedef struct cpu_context
     unsigned long fp;
     unsigned long sp;
     unsigned long lr;
-} cpu_context;
+};
 
-typedef struct task
+struct task
 {
-    cpu_context cpu_context;
+    struct cpu_context cpu_context;
     pid_t pid;
     state_t state;
     list list;
     unsigned need_resched;
     int exitcode;
-    // char *stack;
     char *kstack;
     unsigned long timeout;
-} task;
+};
 
 void test_thread();
-task *thread_create(void *func);
-void idle();
-void thread_schedule();
-void add_task(task *t);
+struct task *thread_create(void *func);
+void thread_schedule(size_t _);
+void add_task(struct task *t);
 void thread_init();
 int get_the_cur_count();
 

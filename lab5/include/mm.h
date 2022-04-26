@@ -5,7 +5,7 @@
 #include <stddef.h>
 
 #define STARTUP_MEM_START 0x07000000
-#define STARTUP_MEM_END 0x077fffff
+#define STARTUP_MEM_END 0x07ffffff
 
 typedef struct FrameFlag
 {
@@ -43,3 +43,4 @@ void *smalloc(size_t size);
 
 
 #endif
+

@@ -1,5 +1,5 @@
 // save general registers to stack
-.macro save_all
+.macro save_gp_reg
     sub sp, sp, 32 * 8
     stp x0, x1, [sp ,16 * 0]
     stp x2, x3, [sp ,16 * 1]
@@ -19,8 +19,16 @@
     str x30, [sp, 16 * 15]
 .endm
 
+// save exception registers to stack
+.macro save_exception_reg
+    sub sp, sp, 2 * 8
+    mrs x0, elr_el1
+    mrs x1, spsr_el1
+    stp x0, x1, [sp, 0]
+.endm
+
 // load general registers from stack
-.macro load_all
+.macro load_gp_reg
     ldp x0, x1, [sp ,16 * 0]
     ldp x2, x3, [sp ,16 * 1]
     ldp x4, x5, [sp ,16 * 2]
@@ -39,6 +47,15 @@
     ldr x30, [sp, 16 * 15]
     add sp, sp, 32 * 8
 .endm
+
+// load exception registers from stack
+.macro load_exception_reg
+    ldp x0, x1, [sp, 0]
+    msr elr_el1, x0
+    msr spsr_el1, x1
+    add sp, sp, 2 * 8
+.endm
+
 
 .macro exception_entry label
     .align 7
@@ -59,8 +76,8 @@ el1_vector_base:
   
   exception_entry _el1_curr_el_spx_sync
   exception_entry _el1_curr_el_spx_irq
-  exception_entry exception_handler
-  exception_entry exception_handler
+  exception_entry _el1_curr_el_spx_fiq
+  exception_entry _el1_curr_el_spx_serr
 
   
   exception_entry _el1_lower_el_aarch64_sync
@@ -76,31 +93,51 @@ el1_vector_base:
 
 
 _el1_lower_el_aarch64_sync:
-  save_all
+  save_gp_reg
   bl lower_sync_handler
-  load_all
+  load_gp_reg
   eret
 
 _el1_lower_el_aarch64_irq:
-  save_all
+  save_gp_reg
   bl lower_irq_handler
-  load_all
+  load_gp_reg
   eret
 
 _el1_curr_el_spx_sync:
-  save_all
+  save_gp_reg
+  save_exception_reg
   bl curr_sync_handler
-  load_all
+  load_exception_reg
+  load_gp_reg
   eret
   
 _el1_curr_el_spx_irq:
-  save_all
+  save_gp_reg
+  save_exception_reg
   bl curr_irq_handler
-  load_all
+  load_exception_reg
+  load_gp_reg
+  eret
+
+_el1_curr_el_spx_fiq:
+  save_gp_reg
+  save_exception_reg
+  bl curr_fiq_handler
+  load_exception_reg
+  load_gp_reg
+  eret
+
+_el1_curr_el_spx_serr:
+  save_gp_reg
+  save_exception_reg
+  bl curr_serr_handler
+  load_exception_reg
+  load_gp_reg
   eret
 
 exception_handler:
-  save_all
+  save_gp_reg
   bl default_handler
-  load_all
+  load_gp_reg
   eret 

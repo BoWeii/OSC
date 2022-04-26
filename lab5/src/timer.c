@@ -7,8 +7,7 @@
 #include "exception_c.h"
 #include "current.h"
 
-timeout_event *timeout_queue_head, *timeout_queue_tail;
-
+timeout_event *timeout_queue_head = 0, *timeout_queue_tail = 0;
 void core_timer_enable()
 {
     /*
@@ -16,21 +15,21 @@ void core_timer_enable()
         cntp_tval_el0 = cntpct_el0 - cntp_cval_el0
     */
     write_sysreg(cntp_ctl_el0, 1); // enable
-    unsigned long frq = read_sysreg(cntfrq_el0);
-    write_sysreg(cntp_tval_el0, frq * 1); // set expired time
-    *CORE0_TIMER_IRQ_CTRL = 2;            // unmask timer interrupt
+    unsigned long frq = read_sysreg(cntfrq_el0) / 1000;
+    write_sysreg(cntp_tval_el0, frq * MS(SCHE_CYCLE)); // set expired time
+    *CORE0_TIMER_IRQ_CTRL = 2;                         // unmask timer interrupt
 }
 
 void core_timer_disable()
 {
     write_sysreg(cntp_ctl_el0, 0); // disable
-    *CORE0_TIMER_IRQ_CTRL = 0;     // unmask timer interrupt
+    *CORE0_TIMER_IRQ_CTRL = 0;     // mask timer interrupt
 }
 
 void set_expired_time(unsigned long duration)
 {
     unsigned long frq = read_sysreg(cntfrq_el0) / 1000;
-    write_sysreg(cntp_tval_el0, frq * duration); // ms
+    write_sysreg(cntp_tval_el0, frq * MS(duration)); // ms
 }
 
 unsigned long get_current_time()
@@ -50,17 +49,16 @@ void print_message(char *msg)
 {
     unsigned long current_time = get_current_time();
     uart_printf("\ncurrent time : %d.%ds\n", GET_S(current_time), GET_MS(current_time));
-    uart_printf("message: %s\n\n", msg);
 }
 
 void timeout_event_init()
 {
     timeout_queue_head = 0;
     timeout_queue_tail = 0;
-    add_timer((timer_callback)thread_schedule, (size_t)NULL, MS(SCHE_CYCLE));
+    add_timer((timer_callback)thread_schedule, (size_t)0, MS(SCHE_CYCLE));
 }
 
-void add_timer(timer_callback cb, size_t arg, unsigned long duration)
+void add_timer(void (*cb)(size_t), size_t arg, unsigned long duration)
 {
     timeout_event *new_event = (timeout_event *)kmalloc(sizeof(timeout_event));
     new_event->register_time = get_current_time();
@@ -69,6 +67,7 @@ void add_timer(timer_callback cb, size_t arg, unsigned long duration)
     new_event->arg = arg;
     new_event->next = 0;
     new_event->prev = 0;
+
     size_t flag = disable_irq();
     if (timeout_queue_head == 0)
     {
@@ -123,33 +122,31 @@ static inline void set_resched(unsigned long current_time)
 void timer_handler()
 {
     unsigned long current_time = get_current_time();
-    timeout_event *next_event = timeout_queue_head->next;
     timeout_event *cur_event = timeout_queue_head;
+    timeout_event *next_event = cur_event->next;
     if (next_event)
     {
         next_event->prev = 0;
         timeout_queue_head = next_event;
         set_expired_time(next_event->register_time + next_event->duration - current_time);
     }
-    else // no other eventwee
+    else
     {
         timeout_queue_head = timeout_queue_tail = 0;
-        // core_timer_disable();
+        core_timer_disable();
     }
-    set_resched(current_time);
-    if (cur_event->callback != NULL)
+
+    if (cur_event->callback == (timer_callback)&thread_schedule)
     {
-        if ((cur_event->callback) == (timer_callback)thread_schedule)
-        {
-            add_timer((timer_callback)thread_schedule, (size_t)NULL, MS(SCHE_CYCLE));
-            enable_interrupt();
-            cur_event->callback(cur_event->arg);
-            disable_interrupt();
-        }
-        else
-        {
-            cur_event->callback(cur_event->arg);
-        }
+        set_resched(current_time);
+        add_timer((timer_callback)thread_schedule, (size_t)0, MS(SCHE_CYCLE));
+        enable_interrupt();
+        thread_schedule(0);
+        disable_interrupt();
+    }
+    else if (cur_event->callback)
+    {
+        cur_event->callback(cur_event->arg);
     }
     kfree(cur_event);
 }

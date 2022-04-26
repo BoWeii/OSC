@@ -5,7 +5,7 @@
 #include "exception_c.h"
 #include "current.h"
 
-static int task_count = 0;
+pid_t task_count = 0;
 
 list running_queue = LIST_HEAD_INIT(running_queue);
 list waiting_queue = LIST_HEAD_INIT(waiting_queue);
@@ -34,14 +34,14 @@ int get_the_cur_count()
     return count;
 }
 
-void add_task(task *t)
+void add_task(struct task *t)
 {
     size_t flags = disable_irq();
     insert_tail(&running_queue, &t->list);
     irq_restore(flags);
 }
 
-void kill_task(task *_task, int status)
+void kill_task(struct task *_task, int status)
 {
     size_t flags = disable_irq();
 
@@ -55,7 +55,7 @@ void kill_task(task *_task, int status)
     irq_restore(flags);
 }
 
-void restart_task(task *_task)
+void restart_task(struct task *_task)
 {
     size_t flags = disable_irq();
 
@@ -70,7 +70,7 @@ void restart_task(task *_task)
     irq_restore(flags);
 }
 
-void pause_task(task *_task)
+void pause_task(struct task *_task)
 {
     size_t flags = disable_irq();
 
@@ -93,10 +93,10 @@ void sleep_task(size_t ms)
     add_timer((timer_callback)restart_task, (size_t)current, ms);
     pause_task(current);
     irq_restore(flags);
-    thread_schedule();
+    thread_schedule(0);
 }
 
-task *pick_next_task()
+struct task *pick_next_task()
 {
     if (list_empty(&running_queue))
     {
@@ -105,7 +105,7 @@ task *pick_next_task()
             uart_send_string("scheduler: run queue is empty\n");
         };
     }
-    task *next_task = list_first_entry(&running_queue, task, list);
+    struct task *next_task = list_first_entry(&running_queue, struct task, list);
     unlink(&next_task->list);
     insert_tail(&running_queue, &next_task->list);
 
@@ -115,32 +115,29 @@ task *pick_next_task()
 //                                       thread                                               //
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
-
-static void switch_task(task *next)
+static void switch_task(struct task *next)
 {
     switch_to(&current->cpu_context, &next->cpu_context);
 }
 
-void thread_schedule()
+void thread_schedule(size_t _)
 {
     if (!current->need_resched)
     {
         return;
     }
 
-    size_t flags = disable_irq();
-
-    task *next = pick_next_task();
-    next->timeout = get_current_time() + DEFAULT_TIMEOUT;
+    unsigned long flags = disable_irq();
+    struct task *next = pick_next_task();
     next->need_resched = 0;
-
     irq_restore(flags);
+
     switch_task(next);
 }
 
 void thread_init()
 {
-    task *cur = kmalloc(sizeof(task));
+    struct task *cur = kmalloc(sizeof(struct task));
     cur->state = TASK_RUNNING;
     cur->pid = task_count++;
     cur->need_resched = 0;
@@ -153,24 +150,23 @@ static void foo()
     for (int i = 0; i < 5; ++i)
     {
         uart_printf("Thread id: %d i=%d\n", current->pid, i);
-        // size_t flags = read_sysreg(DAIF);
-        // uart_printf("in thread daif=%x\n", flags & 0b1111000000);
-        sleep_task(500);
+        // sleep_task(500);
+        delay(1000000);
     }
     kill_task(current, 0);
-    thread_schedule();
+    thread_schedule(0);
 }
 
-task *thread_create(void *func)
+struct task *thread_create(void *func)
 {
-    task *new_task = kmalloc(sizeof(task));
+    struct task *new_task = kmalloc(sizeof(struct task));
     new_task->kstack = kmalloc(0x2000);
     new_task->state = TASK_RUNNING;
     new_task->pid = task_count++;
     new_task->need_resched = 0;
     new_task->timeout = get_current_time() + DEFAULT_TIMEOUT;
     new_task->cpu_context.lr = (unsigned long)func;
-    new_task->cpu_context.sp = (unsigned long)new_task->kstack + 0x2000;
+    new_task->cpu_context.sp = (unsigned long)new_task->kstack + 0x2000 - sizeof(struct pt_regs);
 
     add_task(new_task);
     return new_task;

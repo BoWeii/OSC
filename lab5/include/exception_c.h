@@ -5,8 +5,8 @@ typedef void (*task_callback)(void *);
 
 void enable_interrupt();
 void disable_interrupt();
-size_t disable_irq();
-void irq_restore(size_t flag);
+unsigned long disable_irq();
+void irq_restore(unsigned long flag);
 
 void default_handler();
 void lower_sync_handler();

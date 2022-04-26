@@ -24,7 +24,6 @@ typedef struct cpio_header
     char c_check[8];    // always set to zero by writers and ignored by	readers.
 } cpio_header;
 
-extern char *initramfs_start, *initramfs_end;
 void cpio_ls();
 void cpio_cat(char *filename);
 char *findFile(char *name);

@@ -3,11 +3,11 @@
 
 #include "thread.h"
 
-static inline task *get_thread_ds()
+static inline struct task *get_thread_ds()
 {
-    return (task *)read_sysreg(tpidr_el1);
+    return (struct task *)read_sysreg(tpidr_el1);
 }
-static inline void set_thread_ds(task *cur)
+static inline void set_thread_ds(struct task *cur)
 {
     write_sysreg(tpidr_el1, cur);
 }

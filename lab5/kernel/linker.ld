@@ -1,5 +1,5 @@
 _skernel = 0x80000;
-_ekernel = 0x200000;
+_ekernel = 0x400000;
 
 
 ENTRY(_start)
@@ -26,4 +26,7 @@ SECTIONS
   .bss : { *(.bss*) } 
   . = ALIGN(0x1000);
   _ebss = .;  
+
+  . = _ekernel;
+  
 }

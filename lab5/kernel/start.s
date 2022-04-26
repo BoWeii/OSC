@@ -25,9 +25,11 @@ master:
     sub    x21, x21, x20
     bl     memzero
 
-    mov    sp, #0x800000  // 2MB
+    mov    sp, #0x400000 
     bl     kernel_main
-    
+
+hang2:
+    b hang2
 
 .global _dtb_ptr
 .section .data

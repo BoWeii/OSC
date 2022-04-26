@@ -34,4 +34,6 @@ void get_initramfs_addr(int type, const char *name, const void *data, uint32_t s
 int fdt_traverse(fdt_callback cb, void *dtb_ptr);
 
 extern uintptr_t dtb_end, dtb_start;
+extern char *initramfs_start, *initramfs_end;
+
 #endif

@@ -8,7 +8,6 @@
 
 // #define DEBUG
 
-
 #define FRAME_BASE ((uintptr_t)0x0)
 // get from mailbox's arm memory
 #define FRAME_END ((uintptr_t)0x3b400000)
@@ -101,6 +100,7 @@ void mm_init()
 
 void memory_reserve(uintptr_t start, uintptr_t end)
 {
+
     start = start & ~(PAGE_SIZE - 1);
     end = align_up(end, PAGE_SIZE);
     for (uintptr_t i = start; i < end; i += PAGE_SIZE)
@@ -109,6 +109,9 @@ void memory_reserve(uintptr_t start, uintptr_t end)
         frames[idx].flag |= FRAME_INUSE;
         frames[idx].order = 0;
     }
+#ifdef DEBUG
+    uart_printf("reserve addr from %x ~ %x\n", (unsigned long)start, (unsigned long)end);
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -141,13 +144,15 @@ void merge_useful_pages()
     {
         int page_idx = 0;
         void *page_addr = 0;
+        int buddy_page_idx = 0;
         while (1)
         {
+            buddy_page_idx = page_idx ^ (1 << order);
             if (!IS_INUSE(frames[page_idx]))
             {
-                int buddy_page_idx = page_idx ^ (1 << order);
                 if (!IS_INUSE(frames[buddy_page_idx]) &&
-                    order == frames[buddy_page_idx].order)
+                    order == frames[buddy_page_idx].order &&
+                    buddy_page_idx < FRAME_ARRAY_SIZE)
                 {
                     insert_tail(&frame_bins[order + 1], page_addr);
                     frames[page_idx].order = order + 1;
@@ -158,13 +163,22 @@ void merge_useful_pages()
                     frames[page_idx].order = order;
                 }
             }
+            else
+            {
+                if (buddy_page_idx < FRAME_ARRAY_SIZE &&
+                    !IS_INUSE(frames[buddy_page_idx]))
+                {
+                    insert_tail(&frame_bins[order], (list *)(FRAME_BASE + buddy_page_idx * PAGE_SIZE));
+                    frames[buddy_page_idx].order = order;
+                }
+            }
 
             page_idx += (1 << (order + 1));
-            page_addr = (void *)(FRAME_BASE + page_idx * PAGE_SIZE);
             if (page_idx >= FRAME_ARRAY_SIZE)
             {
                 break;
             }
+            page_addr = (void *)(FRAME_BASE + page_idx * PAGE_SIZE);
         }
     }
 }
@@ -228,7 +242,7 @@ void free_pages(void *victim)
     int page_idx = ((uintptr_t)victim - FRAME_BASE) / PAGE_SIZE;
     if (!IS_INUSE(frames[page_idx]))
     {
-        uart_printf("Error! double free the memory at %x", (uintptr_t)victim);
+        uart_printf("Error! double free the memory at %x\n", (uintptr_t)victim);
         return;
     }
     unsigned int order = frames[page_idx].order;
@@ -346,6 +360,7 @@ void *kmalloc(unsigned int size)
     irq_restore(flag);
     return ptr;
 }
+
 void kfree(void *ptr)
 {
     int idx = addr2idx(ptr);
@@ -371,7 +386,6 @@ void kfree(void *ptr)
         free_pages(ptr);
     }
     irq_restore(flag);
-
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////

@@ -3,35 +3,31 @@
 #include "timer.h"
 #include "peripheral/mini_uart.h"
 #include "exception_c.h"
+#include "current.h"
 #include "thread.h"
 #define AUX_IRQ (1 << 29)
 
 void enable_interrupt() { asm volatile("msr DAIFClr, 0xf"); }
 void disable_interrupt() { asm volatile("msr DAIFSet, 0xf"); }
-size_t disable_irq()
+unsigned long disable_irq()
 {
-    size_t flags;
-    asm(
-        "mrs %0, DAIF\t\n"
-        "msr DAIFSet, 0x2"
-        : "=r"(flags));
-    return flags;
+    unsigned long flag = read_sysreg(DAIF);
+    disable_interrupt();
+    return flag;
 }
-void irq_restore(size_t flag)
+void irq_restore(unsigned long flag)
 {
-    asm("msr DAIF, %0" ::"r"(flag));
+    write_sysreg(DAIF, flag);
 }
 
 void default_handler()
 {
-    disable_interrupt();
     unsigned long spsr = read_sysreg(spsr_el1);
     unsigned long elr = read_sysreg(elr_el1);
     unsigned long esr = read_sysreg(esr_el1);
     uart_printf("spsr_el1: %x\n", spsr);
     uart_printf("elr_el1: %x\n", elr);
     uart_printf("esr_el1: %x\n\n", esr);
-    enable_interrupt();
 }
 
 void lower_irq_handler()
@@ -55,8 +51,6 @@ void lower_sync_handler()
 
 void curr_irq_handler()
 {
-    // size_t flags = read_sysreg(DAIF);
-    // uart_printf("iqr handle flags=%x\n", flags & 0b1111000000);
     unsigned int irq_is_pending = (*IRQ_PENDING_1 & AUX_IRQ);
     unsigned int uart = (*AUX_MU_IIR_REG & 0x1) == 0;
     unsigned int core_timer = (*CORE0_INTERRUPT_SOURCE & 0x2);
@@ -71,103 +65,20 @@ void curr_irq_handler()
     }
 }
 
-void curr_sync_handler(unsigned long esr_el1, unsigned long elr_el1)
+void curr_sync_handler()
 {
+    uart_send_string("!!! in current sync handler !!!\n");
     return;
 }
 
-/*
-lab3 advance2 dead body
-int doing_task = 0;
-task *task_queue_head = 0, *task_queue_tail = 0;
-
-void add_task(task_callback cb, void *arg, unsigned int priority)
+void curr_fiq_handler()
 {
-    task *new_task = (task *)smalloc(sizeof(task));
-    new_task->priority = priority;
-    new_task->callback = cb;
-    new_task->arg = arg;
-    new_task->next = 0;
-    new_task->prev = 0;
-    if (task_queue_head == 0)
-    {
-        task_queue_head = new_task;
-        task_queue_tail = new_task;
-    }
-    else
-    {
-        task *cur = task_queue_head;
-        while (cur)
-        {
-            if (cur->priority < new_task->priority)
-                break;
-            cur = cur->next;
-        }
-        if (cur == 0)
-        { // cur at end
-            new_task->prev = task_queue_tail;
-            task_queue_tail->next = new_task;
-            task_queue_tail = new_task;
-        }
-        else if (cur->prev == 0)
-        { // cur at head
-            new_task->next = cur;
-            (task_queue_head)->prev = new_task;
-            task_queue_head = new_task;
-        }
-        else
-        { // cur at middle
-            new_task->next = cur;
-            new_task->prev = cur->prev;
-            (cur->prev)->next = new_task;
-            cur->prev = new_task;
-        }
-    }
+    uart_send_string("!!! in current fiq handler !!!\n");
+    return;
 }
 
-void exec_task()
+void curr_serr_handler()
 {
-    while (1)
-    {
-        task_queue_head->callback(task_queue_head->arg);
-        disable_interrupt();
-        task_queue_head = task_queue_head->next;
-        if (task_queue_head)
-        {
-            task_queue_head->prev = 0;
-        }
-        else
-        {
-            task_queue_head = task_queue_tail = 0;
-            return;
-        }
-        enable_interrupt();
-    }
+    uart_send_string("!!! in current serr handler !!!\n");
+    return;
 }
-
-void curr_irq_handler_decouple()
-{
-    unsigned int uart = (*IRQ_PENDING_1 & AUX_IRQ);
-    unsigned int core_timer = (*CORE0_INTERRUPT_SOURCE & 0x2);
-    if (uart)
-    {
-        Reg *reg = (Reg *)smalloc(sizeof(Reg));
-        *reg = *AUX_MU_IER_REG;
-        add_task(uart_handler, reg, 3);
-        *AUX_MU_IER_REG &= ~(0x3);
-    }
-    else if (core_timer)
-    {
-        add_task(timer_handler, NULL, 0);
-        core_timer_disable();
-    }
-    if (!doing_task)
-    {
-        doing_task = 1;
-        enable_interrupt();
-        exec_task();
-        enable_interrupt();
-        doing_task = 0;
-    }
-}
-*/
