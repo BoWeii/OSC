@@ -171,10 +171,6 @@ void parse_command(char *buffer)
     {
         info();
     }
-    else if (utils_str_compare(buffer, "wtf") == 0)
-    {
-        uart_printf("run queue task=%d \n", get_the_cur_count());
-    }
     else if (utils_str_compare(buffer, "dtb") == 0)
     {
         fdt_traverse(print_dtb, _dtb_ptr);

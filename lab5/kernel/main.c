@@ -6,11 +6,13 @@
 #include "mm.h"
 #include "timer.h"
 #include "thread.h"
+#include "sche.h"
 
 static void idle(void)
 {
     while (1)
     {
+        thread_kill_zombies();
         thread_schedule(0);
     }
 }
