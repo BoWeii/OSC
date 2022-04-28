@@ -153,7 +153,7 @@ void parse_command(char *buffer)
     }
     else if (utils_str_compare(buffer, "exe") == 0)
     {
-        exe_new_prog("user1.img");
+        exe_new_prog("user2.img");
     }
     else if (utils_str_compare(buffer, "thread") == 0)
     {

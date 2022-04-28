@@ -61,7 +61,7 @@ void lower_sync_handler(TrapFrame *_regs)
     }
 }
 
-void curr_irq_handler()
+void irq_handler()
 {
     unsigned int irq_is_pending = (*IRQ_PENDING_1 & AUX_IRQ);
     unsigned int uart = (*AUX_MU_IIR_REG & 0x1) == 0;

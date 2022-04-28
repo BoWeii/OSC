@@ -152,7 +152,7 @@ _el1_lower_el_aarch64_sync:
 
 _el1_lower_el_aarch64_irq:
   kernel_entry 0
-  bl lower_irq_handler
+  bl irq_handler
   kernel_exit 0
 
 _el1_curr_el_spx_sync:
@@ -163,7 +163,7 @@ _el1_curr_el_spx_sync:
   
 _el1_curr_el_spx_irq:
   kernel_entry 1
-  bl curr_irq_handler
+  bl irq_handler
   kernel_exit 1
 
 _el1_curr_el_spx_fiq:

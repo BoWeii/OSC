@@ -11,7 +11,7 @@ void irq_restore(unsigned long flag);
 
 void default_handler();
 void lower_sync_handler(TrapFrame *_regs);
-void curr_irq_handler();
+void irq_handler();
 void curr_sync_handler();
 
 #endif

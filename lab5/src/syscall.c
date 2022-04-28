@@ -7,14 +7,27 @@
 
 void sys_getpid(TrapFrame *_regs)
 {
-    uart_send_string("in sys_getpid\n");
     _regs->regs[0] = current->pid;
 }
-void sys_uartread(TrapFrame *_regs)
+void sys_uartrecv(TrapFrame *_regs)
 {
+    char *buf = (char *)_regs->regs[0];
+    int count = _regs->regs[1];
+    for (int i = 0; i < count; i++)
+    {
+        buf[i] = uart_recv();
+    }
+    _regs->regs[0] = count;
 }
 void sys_uartwrite(TrapFrame *_regs)
 {
+    char *buf = (char *)_regs->regs[0];
+    int count = _regs->regs[1];
+    for (int i = 0; i < count; i++)
+    {
+        uart_send(buf[i]);
+    }
+    _regs->regs[0] = count;
 }
 void sys_exec(TrapFrame *_regs)
 {
@@ -35,7 +48,7 @@ void sys_kill_pid(TrapFrame *_regs)
 
 syscall syscall_table[NUM_syscalls] = {
     [SYS_GETPID] = &sys_getpid,
-    [SYS_UART_READ] = &sys_uartread,
+    [SYS_UART_RECV] = &sys_uartrecv,
     [SYS_UART_WRITE] = &sys_uartwrite,
     [SYS_EXEC] = &sys_exec,
     [SYS_FORK] = &sys_fork,

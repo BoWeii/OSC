@@ -10,7 +10,7 @@ typedef void (*syscall)(TrapFrame *);
 
 enum {
     SYS_GETPID,
-    SYS_UART_READ,
+    SYS_UART_RECV,
     SYS_UART_WRITE,
     SYS_EXEC,
     SYS_FORK,
