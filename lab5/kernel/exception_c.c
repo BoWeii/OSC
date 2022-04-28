@@ -5,6 +5,7 @@
 #include "exception_c.h"
 #include "current.h"
 #include "thread.h"
+#include "syscall.h"
 #define AUX_IRQ (1 << 29)
 
 void enable_interrupt() { asm volatile("msr DAIFClr, 0xf"); }
@@ -37,16 +38,27 @@ void lower_irq_handler()
     set_expired_time(2);
 }
 
-void lower_sync_handler()
+void lower_sync_handler(TrapFrame *_regs)
 {
-    disable_interrupt();
-    unsigned long spsr = read_sysreg(spsr_el1);
-    unsigned long elr = read_sysreg(elr_el1);
-    unsigned long esr = read_sysreg(esr_el1);
-    uart_printf("spsr_el1: %x\n", spsr);
-    uart_printf("elr_el1: %x\n", elr);
-    uart_printf("esr_el1: %x\n\n", esr);
-    enable_interrupt();
+    unsigned long esr = read_sysreg(esr_el1); // cause of that exception
+    unsigned int ec = ESR_ELx_EC(esr);
+    switch (ec)
+    {
+    case ESR_ELx_EC_SVC64:
+        enable_interrupt();
+        syscall_handler(_regs);
+        disable_interrupt();
+        break;
+    case ESR_ELx_EC_DABT_LOW:
+        uart_send_string("in Data Abort\n");
+        break;
+    case ESR_ELx_EC_IABT_LOW:
+        uart_send_string("in Instruction  Abort\n");
+        break;
+    default:
+        uart_send_string("Not match the ec\n");
+        return;
+    }
 }
 
 void curr_irq_handler()
@@ -56,7 +68,6 @@ void curr_irq_handler()
     unsigned int core_timer = (*CORE0_INTERRUPT_SOURCE & 0x2);
     if (irq_is_pending && uart)
     {
-
         uart_handler();
     }
     else if (core_timer)

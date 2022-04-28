@@ -6,6 +6,7 @@
 #include "mm.h"
 #include "exception_c.h"
 #include "current.h"
+#include "trap_frame.h"
 
 void thread_kill_zombies()
 {
@@ -55,10 +56,10 @@ static void foo()
 struct task *thread_create(void *func)
 {
     struct task *new_thread = create_task();
-    new_thread->kstack = kmalloc(STACK_SIZE);
+    new_thread->kernel_stack = kmalloc(STACK_SIZE);
     new_thread->state = TASK_RUNNING;
     new_thread->cpu_context.lr = (unsigned long)func;
-    new_thread->cpu_context.sp = (unsigned long)new_thread->kstack + STACK_SIZE - sizeof(struct pt_regs);
+    new_thread->cpu_context.sp = (unsigned long)new_thread->kernel_stack + STACK_SIZE - sizeof(TrapFrame);
 
     add_task(new_thread);
 

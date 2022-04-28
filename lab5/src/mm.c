@@ -360,6 +360,25 @@ void *kmalloc(unsigned int size)
     irq_restore(flag);
     return ptr;
 }
+void *kcalloc(unsigned int size)
+{
+    void *p = kmalloc(size);
+    if (!p)
+    {
+        return NULL;
+    }
+    if (size < PAGE_SIZE)
+    {
+        size = align_up_exp(size);
+    }
+    else
+    {
+        size = align_up(size, PAGE_SIZE);
+    }
+    memset(p, 0, size);
+
+    return p;
+}
 
 void kfree(void *ptr)
 {

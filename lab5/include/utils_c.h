@@ -7,10 +7,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
-
 /* string */
-int utils_str_compare(const char *a,const char *b);
-int utils_strncmp(const char *a, const char *b, size_t n) ;
+int utils_str_compare(const char *a, const char *b);
+int utils_strncmp(const char *a, const char *b, size_t n);
 void utils_newline2end(char *str);
 char utils_int2char(int a);
 void utils_int2str_dec(int a, char *str);
@@ -28,5 +27,6 @@ void cancel_reset();
 /* others */
 void delay(unsigned int clock);
 void memcpy(void *dst, const void *src, size_t n);
+void *memset(void *s, int c, size_t n);
 
 #endif

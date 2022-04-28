@@ -8,6 +8,7 @@
 #include "timer.h"
 #include "dtb.h"
 #include "mm.h"
+#include "exec.h"
 #include "thread.h"
 #include <stddef.h>
 #define BUFFER_MAX_SIZE 256u
@@ -152,10 +153,7 @@ void parse_command(char *buffer)
     }
     else if (utils_str_compare(buffer, "exe") == 0)
     {
-        uart_send_string("program name: ");
-        char buffer[BUFFER_MAX_SIZE];
-        read_command(buffer);
-        cpio_load_program(buffer);
+        exe_new_prog("user1.img");
     }
     else if (utils_str_compare(buffer, "thread") == 0)
     {

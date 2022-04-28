@@ -27,6 +27,7 @@ void free_pages(void *victim);
 
 // dynamic mem allocate
 void *kmalloc(unsigned int size);
+void *kcalloc(unsigned int size);
 void kfree(void *ptr);
 
 // test

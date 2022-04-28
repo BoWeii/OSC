@@ -11,6 +11,19 @@ list running_queue = LIST_HEAD_INIT(running_queue);
 list waiting_queue = LIST_HEAD_INIT(waiting_queue);
 list stopped_queue = LIST_HEAD_INIT(stopped_queue);
 
+
+int get_the_cur_count()
+{
+    int count = 0;
+    list *head = &running_queue;
+    while (head->next != &running_queue)
+    {
+        count++;
+        head = head->next;
+    }
+    return count;
+}
+
 void add_task(struct task *t)
 {
     size_t flags = disable_irq();
@@ -75,21 +88,24 @@ void sleep_task(size_t ms)
 
 void free_task(struct task *victim)
 {
-    if (victim->kstack)
-        kfree(victim->kstack);
+    if (victim->kernel_stack)
+        kfree(victim->kernel_stack);
     kfree(victim);
 }
 
 struct task *create_task()
 {
     struct task *new_task = kmalloc(sizeof(struct task));
-    new_task->kstack = NULL;
+    new_task->kernel_stack = NULL;
+    new_task->user_stack = NULL;
+    new_task->user_prog = NULL;
+    new_task->user_prog_size = 0;
     new_task->state = TASK_INIT;
     new_task->pid = task_count++;
     new_task->need_resched = 0;
+    new_task->exitcode = 0;
     new_task->timeout = get_current_time() + DEFAULT_TIMEOUT;
-    new_task->cpu_context.lr = 0;
-    new_task->cpu_context.sp = 0;
+    new_task->cpu_context.lr = new_task->cpu_context.sp = new_task->cpu_context.fp = 0;
     return new_task;
 }
 

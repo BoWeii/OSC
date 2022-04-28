@@ -2,14 +2,6 @@
 #define __SCHE_H
 #include "list.h"
 
-struct pt_regs
-{
-    unsigned long regs[31];
-    unsigned long sp;
-    unsigned long pc;
-    unsigned long pstate;
-};
-
 typedef unsigned long pid_t;
 typedef enum
 {
@@ -39,13 +31,16 @@ struct cpu_context
 struct task
 {
     struct cpu_context cpu_context;
-    pid_t pid;
+    char *kernel_stack;
+    char *user_stack;
+    char *user_prog;
+    size_t user_prog_size;
     state_t state;
-    list list;
+    pid_t pid;
     unsigned need_resched;
     int exitcode;
-    char *kstack;
     unsigned long timeout;
+    list list;
 };
 
 extern list running_queue, waiting_queue, stopped_queue;
@@ -58,5 +53,5 @@ void free_task(struct task *victim);
 struct task *create_task();
 void switch_task(struct task *next);
 struct task *pick_next_task();
-
+int get_the_cur_count();
 #endif
