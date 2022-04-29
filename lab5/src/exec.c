@@ -8,6 +8,22 @@
 #include "thread.h"
 #include "mini_uart.h"
 
+static void replace_user_context(void *prog, size_t data_size)
+{
+    struct task *_task = current;
+
+    memset(_task->user_stack, 0, STACK_SIZE);
+    kfree(_task->user_prog);
+    _task->user_prog = prog;
+    _task->user_prog_size = data_size;
+
+
+    TrapFrame *trapframe = (TrapFrame *)((char *)_task->kernel_stack + STACK_SIZE - sizeof(TrapFrame));
+    memset(trapframe, 0, sizeof(TrapFrame));
+
+    trapframe->sp = (unsigned long)_task->user_stack + STACK_SIZE - sizeof(TrapFrame);
+}
+
 void jump_user_prog(void *target_addr, char *kernel_sp, char *user_sp)
 {
     asm volatile("mov x0, 0  \n");
@@ -26,7 +42,7 @@ static void init_user_prog()
     jump_user_prog(current->user_prog, 0, (char *)current->user_stack + STACK_SIZE);
 }
 
-int do_exec(const char *path)
+int do_exec(const char *path, const char *argv[])
 {
     void *target_addr;
     size_t data_size = cpio_load_program(path, &target_addr);
@@ -36,6 +52,8 @@ int do_exec(const char *path)
         return -1;
     }
 
+    replace_user_context(target_addr, data_size);
+    jump_user_prog(current->user_prog, current->kernel_stack + STACK_SIZE - sizeof(TrapFrame), current->user_stack + STACK_SIZE - sizeof(TrapFrame));
     return 0;
 }
 

@@ -155,6 +155,10 @@ void parse_command(char *buffer)
     {
         exe_new_prog("user2.img");
     }
+        else if (utils_str_compare(buffer, "wtf") == 0)
+    {
+        uart_printf("Current task count :%d\n",get_the_cur_count());
+    }
     else if (utils_str_compare(buffer, "thread") == 0)
     {
         test_thread();

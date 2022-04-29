@@ -3,9 +3,10 @@
 #include <stdint.h>
 #include <stddef.h>
 
-typedef struct list {
+typedef struct list
+{
     struct list *next, *prev;
-}list;
+} list;
 
 #define container_of(ptr, type, member) ({ \
     void *__mptr = (void *)(ptr);          \
@@ -18,12 +19,21 @@ typedef struct list {
     container_of(ptr, type, member)
 
 #define list_first_entry(ptr, type, member) \
-	list_entry((ptr)->next, type, member)
+    list_entry((ptr)->next, type, member)
 
-#define LIST_HEAD_INIT(name) { &(name), &(name) }
+#define list_for_each_entry(entry, head, member)                       \
+    for (entry = list_entry((head)->next, __typeof__(*entry), member); \
+         &entry->member != (head);                                     \
+         entry = list_entry(entry->member.next, __typeof__(*entry), member))
 
-static inline int list_empty(const list *head){
-	return head->next == head;
+#define LIST_HEAD_INIT(name) \
+    {                        \
+        &(name), &(name)     \
+    }
+
+static inline int list_empty(const list *head)
+{
+    return head->next == head;
 }
 
 void list_init(list *node);

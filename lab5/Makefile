@@ -23,8 +23,8 @@ KER_S:=$(shell find kernel/ -name '*.s')
 BL_C:=$(shell find bootloader/ -name '*.c')
 BL_S:=$(shell find bootloader/ -name '*.s')
 
-USER1_S:=$(shell find users/user1/ -name '*.s')
-USER1_OBJS:= $(USER1_S:%.s=%.o) 
+USER1_C:=$(shell find users/user1/ -name '*.c')
+USER1_OBJS:= $(USER1_C:%.c=%.o) 
 
 USER2_C:=$(shell find users/user2/ -name '*.c')
 USER2_OBJS:= $(USER2_C:%.c=%.o) 

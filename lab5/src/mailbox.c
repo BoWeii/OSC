@@ -2,11 +2,11 @@
 #include "utils_c.h"
 #include "mini_uart.h"
 
-volatile unsigned int __attribute__((aligned(16))) mailbox[8];
+unsigned int __attribute__((aligned(16))) mailbox[8];
 
-int mailbox_call()
+unsigned int mailbox_call(unsigned char channel, unsigned int *_mailbox)
 {
-    unsigned int readChannel = (((unsigned int)((unsigned long)&mailbox) & ~0xF) | (0x8 & 0xF));
+    unsigned int readChannel = (((unsigned int)((unsigned long)_mailbox) & ~0xF) | (channel & 0xF));
     while (*MAILBOX_STATUS & MAILBOX_FULL)
     {
     }
@@ -18,15 +18,14 @@ int mailbox_call()
         }
         if (readChannel == *MAILBOX_READ)
         {
-            return mailbox[1] == MAILBOX_RESPONSE;
+            return _mailbox[1] == MAILBOX_RESPONSE;
         }
     }
     return 0;
 }
 
-void get_board_revision()
+unsigned int get_board_revision()
 {
-    uart_send_string("In get_board_revision\n");
     mailbox[0] = 7 * 4; // buffer size in bytes
     mailbox[1] = REQUEST_CODE;
     // tags begin
@@ -36,11 +35,14 @@ void get_board_revision()
     mailbox[5] = 0; // value buffer
     // tags end
     mailbox[6] = END_TAG;
-    mailbox_call(); // message passing procedure call, you should implement it following the 6 steps provided above.
+    mailbox_call(MAILBOX_CH_PROP, mailbox); // message passing procedure call, you should implement it following the 6 steps provided above.
     // printf("0x%x\n", mailbox[5]); // it should be 0xa020d3 for rpi3 b+
     uart_hex(mailbox[5]);
     uart_send_string("\n");
+    return mailbox[5];
 }
+
+
 void get_arm_memory()
 {
     mailbox[0] = 8 * 4; // buffer size in bytes
@@ -53,7 +55,7 @@ void get_arm_memory()
     mailbox[6] = 0; // value buffer
     // tags end
     mailbox[7] = END_TAG;
-    mailbox_call(); // message passing procedure call, you should implement it following the 6 steps provided above.
+    mailbox_call(MAILBOX_CH_PROP, mailbox); // message passing procedure call, you should implement it following the 6 steps provided above.
     uart_send_string("Arm base address: ");
     uart_hex(mailbox[5]);
     uart_send_string("\n");

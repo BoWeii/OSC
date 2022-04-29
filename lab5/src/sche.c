@@ -11,7 +11,6 @@ list running_queue = LIST_HEAD_INIT(running_queue);
 list waiting_queue = LIST_HEAD_INIT(waiting_queue);
 list stopped_queue = LIST_HEAD_INIT(stopped_queue);
 
-
 int get_the_cur_count()
 {
     int count = 0;
@@ -38,11 +37,11 @@ void kill_task(struct task *_task, int status)
     _task->state = TASK_STOPPED;
     _task->need_resched = 1;
     unlink(&_task->list);
-
     _task->exitcode = status;
     insert_head(&stopped_queue, &_task->list);
 
     irq_restore(flags);
+    thread_schedule(0);
 }
 
 void restart_task(struct task *_task)
@@ -57,6 +56,7 @@ void restart_task(struct task *_task)
     _task->state = TASK_RUNNING;
     unlink(&_task->list);
     insert_tail(&running_queue, &_task->list);
+
     irq_restore(flags);
 }
 
@@ -80,9 +80,11 @@ void pause_task(struct task *_task)
 void sleep_task(size_t ms)
 {
     size_t flags = disable_irq();
+
     add_timer((timer_callback)restart_task, (size_t)current, ms);
     pause_task(current);
     irq_restore(flags);
+
     thread_schedule(0);
 }
 
@@ -132,4 +134,18 @@ void switch_task(struct task *next)
         return;
     }
     switch_to(&current->cpu_context, &next->cpu_context);
+}
+
+struct task *get_task(pid_t target)
+{
+    struct task *_task;
+    list_for_each_entry(_task, &running_queue, list)
+    {
+        if (_task->pid == target)
+        {
+            uart_printf("get the task\n");
+            return _task;
+        }
+    }
+    return NULL;
 }

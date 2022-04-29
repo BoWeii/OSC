@@ -19,9 +19,18 @@
 #define TAG_REQUEST_CODE    0x00000000
 #define END_TAG             0x00000000
 
+#define MAILBOX_CH_POWER   0
+#define MAILBOX_CH_FB      1
+#define MAILBOX_CH_VUART   2
+#define MAILBOX_CH_VCHIQ   3
+#define MAILBOX_CH_LEDS    4
+#define MAILBOX_CH_BTNS    5
+#define MAILBOX_CH_TOUCH   6
+#define MAILBOX_CH_COUNT   7
+#define MAILBOX_CH_PROP    8
 
-int mailbox_call();
-void get_board_revision();
+unsigned int mailbox_call(unsigned char channel, unsigned int *_mailbox);
+unsigned int get_board_revision();
 void get_arm_memory();
 
 #endif

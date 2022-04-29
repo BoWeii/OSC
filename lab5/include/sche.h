@@ -54,4 +54,6 @@ struct task *create_task();
 void switch_task(struct task *next);
 struct task *pick_next_task();
 int get_the_cur_count();
+struct task *get_task(pid_t target);
+
 #endif

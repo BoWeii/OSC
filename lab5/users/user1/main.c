@@ -280,20 +280,10 @@ int start(void)
 {
     // char buf1[0x10] = {0};
     int pid = getpid();
-    uart_printf("[User2] pid:%d\n", pid);
+    uart_printf("[User1] pid:%d\n", pid);
 
     unsigned int revision = get_board_revision();
-    uart_printf("[User2] Revision: %x\r\n", revision);
-    uart_printf("[User2] exe : user1.img");
-    exec("user1.img", NULL);
-
-    // uart_printf("[user] input : \n");
-    // uart_recv(buf1,5);
-    // uart_printf("[user] onput : %s\n",buf1);
-    
-    // kill_pid(pid);
-
-    // while(1);
+    uart_printf("[User1] Revision: %x\r\n", revision);
     exit();
     return 0;
 }

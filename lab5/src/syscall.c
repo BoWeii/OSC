@@ -2,6 +2,7 @@
 #include "stddef.h"
 #include "trap_frame.h"
 #include "current.h"
+#include "peripheral/mailbox.h"
 #include "mini_uart.h"
 #include "exec.h"
 
@@ -31,19 +32,36 @@ void sys_uartwrite(TrapFrame *_regs)
 }
 void sys_exec(TrapFrame *_regs)
 {
+    const char *path = (char *)_regs->regs[0];
+    const char **args = (const char **)_regs->regs[1];
+    _regs->regs[0]=do_exec(path,args);
 }
 void sys_fork(TrapFrame *_regs)
 {
 }
 void sys_exit(TrapFrame *_regs)
 {
-    uart_send_string("in sys_exit\n");
+    kill_task(current, _regs->regs[0]);
 }
 void sys_mbox_call(TrapFrame *_regs)
 {
+    unsigned int channel = _regs->regs[0];
+    unsigned int *mailbox = (unsigned int*)_regs->regs[1];
+    mailbox_call(channel, mailbox);
 }
 void sys_kill_pid(TrapFrame *_regs)
 {
+    pid_t target = _regs->regs[0];
+    if (current->pid == target)
+    {
+        kill_task(current, target);
+        return;
+    }
+    struct task *victim = get_task(target);
+    if (victim)
+    {
+        kill_task(victim, 0);
+    }
 }
 
 syscall syscall_table[NUM_syscalls] = {
