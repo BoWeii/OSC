@@ -143,7 +143,6 @@ struct task *get_task(pid_t target)
     {
         if (_task->pid == target)
         {
-            uart_printf("get the task\n");
             return _task;
         }
     }

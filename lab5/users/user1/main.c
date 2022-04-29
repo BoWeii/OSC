@@ -278,12 +278,9 @@ unsigned int get_board_revision()
 
 int start(void)
 {
-    // char buf1[0x10] = {0};
     int pid = getpid();
     uart_printf("[User1] pid:%d\n", pid);
 
-    unsigned int revision = get_board_revision();
-    uart_printf("[User1] Revision: %x\r\n", revision);
     exit();
     return 0;
 }

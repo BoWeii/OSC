@@ -55,5 +55,5 @@ void switch_task(struct task *next);
 struct task *pick_next_task();
 int get_the_cur_count();
 struct task *get_task(pid_t target);
-
+extern pid_t task_count;
 #endif

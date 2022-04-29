@@ -5,6 +5,7 @@
 #include "peripheral/mailbox.h"
 #include "mini_uart.h"
 #include "exec.h"
+#include "fork.h"
 
 void sys_getpid(TrapFrame *_regs)
 {
@@ -38,6 +39,7 @@ void sys_exec(TrapFrame *_regs)
 }
 void sys_fork(TrapFrame *_regs)
 {
+    _regs->regs[0] = do_fork(_regs);
 }
 void sys_exit(TrapFrame *_regs)
 {

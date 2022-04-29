@@ -72,7 +72,10 @@ void exec(const char *name, char *const argv[])
 {
     syscall(SYS_EXEC, (void *)name, (void *)argv, 0, 0, 0, 0);
 }
-
+int fork(void)
+{
+    return (int)syscall(SYS_FORK, 0, 0, 0, 0, 0, 0);
+}
 /* normal function */
 
 static void uart_send(char c)
@@ -254,11 +257,9 @@ unsigned int uart_printf(char *fmt, ...)
 #define REQUEST_CODE 0x00000000
 #define GET_BOARD_REVISION 0x00010002
 #define TAG_REQUEST_CODE 0x00000000
-#define END_TAG             0x00000000
-
+#define END_TAG 0x00000000
 
 unsigned int __attribute__((aligned(16))) mailbox[8];
-
 
 unsigned int get_board_revision()
 {
@@ -283,17 +284,20 @@ int start(void)
     uart_printf("[User2] pid:%d\n", pid);
 
     unsigned int revision = get_board_revision();
-    uart_printf("[User2] Revision: %x\r\n", revision);
-    uart_printf("[User2] exe : user1.img");
-    exec("user1.img", NULL);
+    uart_printf("[User2] Revision: %x\n", revision);
 
-    // uart_printf("[user] input : \n");
-    // uart_recv(buf1,5);
-    // uart_printf("[user] onput : %s\n",buf1);
-    
-    // kill_pid(pid);
+    pid = fork();
 
-    // while(1);
+    if (pid == 0)
+    {
+        uart_printf("[User2] child: exec user1.img\r\n");
+        exec("user1.img", NULL);
+    }
+    else
+    {
+        uart_printf("[User2] parent: child pid: %d\n", pid);
+    }
+    uart_printf("[User2 ] exit\n");
     exit();
     return 0;
 }
