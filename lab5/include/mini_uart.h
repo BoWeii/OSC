@@ -9,6 +9,7 @@ void uart_init();
 void uart_send_string(const char* str);
 void uart_send(const char c);
 char uart_recv();
+char uart_recv_raw();
 void uart_hex(unsigned int d);
 void uart_dec(unsigned int num);
 void uart_handler();

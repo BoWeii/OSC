@@ -3,5 +3,4 @@
 
 void restore_regs_eret();
 
-
 #endif

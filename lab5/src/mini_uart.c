@@ -87,6 +87,20 @@ char uart_recv()
     return temp == '\r' ? '\n' : temp;
 }
 
+char uart_recv_raw()
+{
+    /*
+    bit_0 == 1 -> readable
+    0x01 = 0000 0000 0000 0001
+    ref BCM2837-ARM-Peripherals p5
+    */
+    while (!(*(AUX_MU_LSR_REG)&0x01))
+    {
+    }
+    char temp = *(AUX_MU_IO_REG)&0xFF;
+    return temp;
+}
+
 void uart_send_string(const char *str)
 {
     while (*str)
