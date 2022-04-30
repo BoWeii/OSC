@@ -17,7 +17,6 @@ static void replace_user_context(void *prog, size_t data_size)
     _task->user_prog = prog;
     _task->user_prog_size = data_size;
 
-
     TrapFrame *trapframe = (TrapFrame *)((char *)_task->kernel_stack + STACK_SIZE - sizeof(TrapFrame));
     memset(trapframe, 0, sizeof(TrapFrame));
 
@@ -39,7 +38,7 @@ void jump_user_prog(void *target_addr, char *kernel_sp, char *user_sp)
 
 static void init_user_prog()
 {
-    jump_user_prog(current->user_prog, 0, (char *)current->user_stack + STACK_SIZE);
+    jump_user_prog(current->user_prog, 0, (char *)current->user_stack + STACK_SIZE - sizeof(TrapFrame));
 }
 
 int do_exec(const char *path, const char *argv[])
