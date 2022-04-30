@@ -7,6 +7,7 @@
 #include "timer.h"
 #include "thread.h"
 #include "sche.h"
+#include "exec.h"
 
 static void idle(void)
 {
@@ -22,8 +23,10 @@ void kernel_main(void)
     uart_send_string("Hello, world!\n");
     mm_init();
     thread_init();
-    thread_create(&shell);
+    // thread_create(&shell);
+    exe_new_prog("syscall.img");
     timeout_event_init();
+    add_timer((timer_callback)thread_schedule, (size_t)0, MS(SCHE_CYCLE));
     enable_interrupt();
     idle();
 }

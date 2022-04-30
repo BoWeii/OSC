@@ -55,7 +55,10 @@ void timeout_event_init()
 {
     timeout_queue_head = 0;
     timeout_queue_tail = 0;
-    add_timer((timer_callback)thread_schedule, (size_t)0, MS(SCHE_CYCLE));
+    unsigned long cntkctl_el1;
+    cntkctl_el1 = read_sysreg(CNTKCTL_EL1);
+    cntkctl_el1 |= 1;
+    write_sysreg(CNTKCTL_EL1, cntkctl_el1);
 }
 
 void add_timer(void (*cb)(size_t), size_t arg, unsigned long duration)

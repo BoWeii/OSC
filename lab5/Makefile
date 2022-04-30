@@ -4,6 +4,8 @@ BL=bootloader
 LINKER=linker.ld
 START=start
 CPIO:=archive/initramfs.cpio
+TA_CPIO:=archive/TA/initramfs.cpio
+
 DTB:=archive/bcm2710-rpi-3-b-plus.dtb
 USER_DIR:=users/user
 USER1:=user1
@@ -88,8 +90,9 @@ $(CPIO):
 on:
 	sudo screen /dev/ttyUSB0 115200
 qe: $(BUILD)$(K8).img
-	qemu-system-aarch64 -M raspi3 -kernel $< -display none -serial null -serial stdio -s \
-	-initrd $(CPIO) \
+	qemu-system-aarch64 -M raspi3 -kernel $< \
+	-serial null -serial stdio -s \
+	-initrd $(TA_CPIO) \
 	-dtb $(DTB) \
 
 clean:

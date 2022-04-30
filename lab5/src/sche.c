@@ -117,7 +117,6 @@ struct task *pick_next_task()
     {
         while (1)
         {
-            uart_send_string("scheduler: run queue is empty\n");
         };
     }
     struct task *next_task = list_first_entry(&running_queue, struct task, list);
