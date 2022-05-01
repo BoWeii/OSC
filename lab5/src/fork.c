@@ -10,37 +10,37 @@
 
 static struct task *fork_context(TrapFrame *_regs)
 {
-    struct task *_task = kmalloc(sizeof(struct task));
+    struct task *child = kmalloc(sizeof(struct task));
 
     unsigned long flags = disable_irq();
-    *_task = *current; // copy the current to _task entirely
-    _task->pid = task_count++;
+    *child = *current; // copy the current to child entirely
+    child->pid = task_count++;
     irq_restore(flags);
 
-    _task->need_resched = 0;
+    child->need_resched = 0;
 
-    _task->user_stack = kmalloc(STACK_SIZE);
-    memcpy(_task->user_stack, current->user_stack, STACK_SIZE);
+    child->user_stack = kmalloc(STACK_SIZE);
+    memcpy(child->user_stack, current->user_stack, STACK_SIZE);
 
-    _task->kernel_stack = kmalloc(STACK_SIZE);
-    TrapFrame *trapframe = (TrapFrame *)((unsigned long)_task->kernel_stack + STACK_SIZE - sizeof(TrapFrame));
+    child->kernel_stack = kmalloc(STACK_SIZE);
+    TrapFrame *trapframe = (TrapFrame *)((unsigned long)child->kernel_stack + STACK_SIZE - sizeof(TrapFrame));
     memcpy(trapframe, _regs, sizeof(TrapFrame));
 
-    _task->user_prog = kmalloc(current->user_prog_size);
-    memcpy(_task->user_prog, current->user_prog, current->user_prog_size);
+    child->user_prog = kmalloc(current->user_prog_size);
+    memcpy(child->user_prog, current->user_prog, current->user_prog_size);
 
-    trapframe->sp = (unsigned long)_task->user_stack + (_regs->sp - (unsigned long)current->user_stack);
-    trapframe->pc = (unsigned long)_task->user_prog + (_regs->pc - (unsigned long)current->user_prog);
+    trapframe->sp = (unsigned long)child->user_stack + (_regs->sp - (unsigned long)current->user_stack);
+    trapframe->pc = (unsigned long)child->user_prog + (_regs->pc - (unsigned long)current->user_prog);
     trapframe->regs[0] = 0; // child process : return 0
 
-    _task->cpu_context.sp = (unsigned long)trapframe;
-    _task->cpu_context.lr = (unsigned long)restore_regs_eret;
-    return _task;
+    child->cpu_context.sp = (unsigned long)trapframe;
+    child->cpu_context.lr = (unsigned long)restore_regs_eret;
+    return child;
 }
 
 size_t do_fork(TrapFrame *_regs)
 {
-    struct task *_task = fork_context(_regs);
-    add_task(_task);
-    return _task->pid;
+    struct task *child = fork_context(_regs);
+    add_task(child);
+    return child->pid;
 }

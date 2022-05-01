@@ -20,7 +20,7 @@ static void replace_user_context(void *prog, size_t data_size)
     TrapFrame *trapframe = (TrapFrame *)((char *)_task->kernel_stack + STACK_SIZE - sizeof(TrapFrame));
     memset(trapframe, 0, sizeof(TrapFrame));
 
-    trapframe->sp = (unsigned long)_task->user_stack + STACK_SIZE - sizeof(TrapFrame);
+    trapframe->sp = (unsigned long)_task->user_stack + STACK_SIZE - 0x10;
 }
 
 void jump_user_prog(void *target_addr, char *kernel_sp, char *user_sp)
@@ -38,7 +38,7 @@ void jump_user_prog(void *target_addr, char *kernel_sp, char *user_sp)
 
 static void init_user_prog()
 {
-    jump_user_prog(current->user_prog, 0, (char *)current->user_stack + STACK_SIZE - sizeof(TrapFrame));
+    jump_user_prog(current->user_prog, 0, (char *)current->user_stack + STACK_SIZE - 0x10);
 }
 
 int do_exec(const char *path, const char *argv[])
@@ -52,7 +52,7 @@ int do_exec(const char *path, const char *argv[])
     }
 
     replace_user_context(target_addr, data_size);
-    jump_user_prog(current->user_prog, current->kernel_stack + STACK_SIZE - sizeof(TrapFrame), current->user_stack + STACK_SIZE - sizeof(TrapFrame));
+    jump_user_prog(current->user_prog, current->kernel_stack + STACK_SIZE - sizeof(TrapFrame), current->user_stack + STACK_SIZE - 0x10);
     return 0;
 }
 
@@ -65,20 +65,11 @@ void exe_new_prog(char *filename)
         uart_send_string("!! exe_new_prog fail !!\n");
         return;
     }
-
-    struct task *prog = create_task();
-    prog->kernel_stack = kmalloc(STACK_SIZE);
-
+    struct task *prog = thread_create(init_user_prog);
     prog->user_stack = kmalloc(STACK_SIZE);
     memset(prog->user_stack, 0, STACK_SIZE);
 
     prog->user_prog = target_addr;
     prog->user_prog_size = data_size;
-
-    prog->state = TASK_RUNNING;
-    prog->cpu_context.lr = (unsigned long)init_user_prog;
-    prog->cpu_context.sp = (unsigned long)prog->kernel_stack + STACK_SIZE - sizeof(TrapFrame);
-
-    add_task(prog);
     return;
 }
