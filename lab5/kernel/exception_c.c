@@ -56,7 +56,6 @@ void lower_sync_handler(TrapFrame *_regs)
         uart_send_string("in Instruction  Abort\n");
         break;
     default:
-        uart_send_string("Not match the ec\n");
         return;
     }
 }

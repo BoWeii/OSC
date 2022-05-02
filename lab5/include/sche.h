@@ -1,6 +1,7 @@
 #ifndef __SCHE_H
 #define __SCHE_H
 #include "list.h"
+#include "signal.h"
 
 typedef unsigned long pid_t;
 typedef enum
@@ -41,6 +42,8 @@ struct task
     int exitcode;
     unsigned long timeout;
     list list;
+    struct signal *signal;
+    struct signal_context *sig_context;
 };
 
 extern list running_queue, waiting_queue, stopped_queue;

@@ -98,6 +98,7 @@ void free_task(struct task *victim)
 struct task *create_task()
 {
     struct task *new_task = kmalloc(sizeof(struct task));
+    new_task->cpu_context.lr = new_task->cpu_context.sp = new_task->cpu_context.fp = 0;
     new_task->kernel_stack = NULL;
     new_task->user_stack = NULL;
     new_task->user_prog = NULL;
@@ -107,7 +108,8 @@ struct task *create_task()
     new_task->need_resched = 0;
     new_task->exitcode = 0;
     new_task->timeout = get_current_time() + DEFAULT_TIMEOUT;
-    new_task->cpu_context.lr = new_task->cpu_context.sp = new_task->cpu_context.fp = 0;
+    new_task->signal = NULL;
+    new_task->sig_context = NULL;
     return new_task;
 }
 

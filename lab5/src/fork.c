@@ -29,6 +29,7 @@ static struct task *fork_context(TrapFrame *_regs)
     child->user_prog = kmalloc(current->user_prog_size);
     memcpy(child->user_prog, current->user_prog, current->user_prog_size);
 
+    trapframe->regs[30] = (unsigned long)child->user_prog + (_regs->regs[30] - (unsigned long)current->user_prog); // using x30 as link return register while function call on AArch64
     trapframe->sp = (unsigned long)child->user_stack + (_regs->sp - (unsigned long)current->user_stack);
     trapframe->pc = (unsigned long)child->user_prog + (_regs->pc - (unsigned long)current->user_prog);
     trapframe->regs[0] = 0; // child process : return 0

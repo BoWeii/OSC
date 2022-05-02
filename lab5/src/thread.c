@@ -47,7 +47,7 @@ static void foo()
     {
         uart_printf("Thread id: %d i=%d\n", current->pid, i);
         // sleep_task(500);
-        delay(10000000);
+        delay(1000000);
     }
     kill_task(current, 0);
     thread_schedule(0);
