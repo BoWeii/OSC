@@ -92,23 +92,24 @@ void sys_sigkill(TrapFrame *_regs)
 {
     int target = _regs->regs[0];
     int SIGNAL = _regs->regs[1];
-
-    if (!current->signal)
-    {
-        (signal_table[SIGNAL])(target);
-    }
-    else
+    int is_find = 0;
+    if (current->signal)
     {
         struct signal *cur = current->signal;
         do
         {
             if (cur->sig_num == SIGNAL)
             {
+                is_find = 1;
                 sig_context_update(_regs, cur->handler);
                 break;
             }
             cur = list_entry(cur->list.next, struct signal, list);
         } while (cur != current->signal);
+    }
+    else if (!current->signal && !is_find)
+    {
+        (signal_table[SIGNAL])(target);
     }
 }
 void sys_sigreturn(TrapFrame *_regs)

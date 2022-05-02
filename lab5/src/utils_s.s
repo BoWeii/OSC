@@ -30,8 +30,3 @@ switch_to:
     mov sp,  x9
     msr tpidr_el1, x1
     ret
-
-.global call_sigreturn
-call_sigreturn:
-    mov x8, 0xa
-    svc 0
