@@ -123,12 +123,9 @@ void get_initramfs_addr(int type, const char *name, const void *data, uint32_t s
 
 uintptr_t dtb_end,dtb_start;
 
-int fdt_traverse(fdt_callback cb, void *_dtb)
+int fdt_traverse(fdt_callback cb)
 {
-    dtb_start = (uintptr_t)_dtb;
-    // uart_send_string("\ndtb loading at:");
-    // uart_hex(dtb_start);
-    // uart_send('\n');
+    // uart_printf("\ndtb loading at:%x\n",dtb_start);
     fdt_header *header = (fdt_header *)dtb_start;
 
     if (get_le2be_uint(&(header->magic)) != 0xd00dfeed)

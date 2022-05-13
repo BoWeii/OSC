@@ -175,7 +175,7 @@ void parse_command(char *buffer)
     }
     else if (utils_str_compare(buffer, "dtb") == 0)
     {
-        fdt_traverse(print_dtb, _dtb_ptr);
+        fdt_traverse(print_dtb);
     }
 
     else if (utils_str_compare(buffer, "async") == 0)

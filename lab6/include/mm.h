@@ -4,8 +4,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#define STARTUP_MEM_START 0x07000000
-#define STARTUP_MEM_END 0x07ffffff
+#define STARTUP_MEM_START (PHYS_OFFSET + 0x07000000)
+#define STARTUP_MEM_END (PHYS_OFFSET + 0x07ffffff)
 
 typedef struct FrameFlag
 {

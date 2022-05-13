@@ -1,11 +1,12 @@
 #ifndef _UTILS_C_H
 #define _UTILS_C_H
-
-#define PM_PASSWORD 0x5a000000
-#define PM_RSTC 0x3F10001c
-#define PM_WDOG 0x3F100024
 #include <stddef.h>
 #include <stdint.h>
+#include "mmu.h"
+#define PM_PASSWORD (PHYS_OFFSET + 0x5a000000)
+#define PM_RSTC (PHYS_OFFSET + 0x3F10001c)
+#define PM_WDOG (PHYS_OFFSET + 0x3F100024)
+
 
 /* string */
 int utils_str_compare(const char *a, const char *b);
@@ -20,7 +21,7 @@ size_t utils_strlen(const char *s);
 uint32_t align_up(uint32_t size, int alignment);
 
 /* reboot */
-void set(long addr, unsigned int value);
+void set(long addr, unsigned long value);
 void reset(int tick);
 void cancel_reset();
 

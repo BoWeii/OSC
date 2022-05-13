@@ -8,6 +8,7 @@
 #include "thread.h"
 #include "sche.h"
 #include "exec.h"
+#include "mmu.h"
 
 static void idle(void)
 {
@@ -18,13 +19,16 @@ static void idle(void)
     }
 }
 
-void kernel_main(void)
+void kernel_main(void *_dtb_ptr)
 {
+    dtb_start=(uintptr_t)_dtb_ptr;
     uart_send_string("Hello, world!\n");
     mm_init();
+    // setup_kernel_space_mapping();
+
     thread_init();
-    // thread_create(&shell);
-    exe_new_prog("syscall.img");
+    thread_create(&shell);
+    // exe_new_prog("syscall.img");
     timeout_event_init();
     add_timer((timer_callback)thread_schedule, (size_t)0, MS(SCHE_CYCLE));
     enable_interrupt();

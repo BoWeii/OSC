@@ -1,5 +1,7 @@
-_skernel = 0x80000;
-_ekernel = 0x400000;
+_skernel = 0xffff000000080000;
+_ekernel = 0xffff000000400000;
+/* _skernel = 0x80000;
+_ekernel = 0x400000; */
 
 
 ENTRY(_start)

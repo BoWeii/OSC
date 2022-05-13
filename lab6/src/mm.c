@@ -5,12 +5,13 @@
 #include "_cpio.h"
 #include "dtb.h"
 #include "exception_c.h"
+#include "mmu.h"
 
 // #define DEBUG
 
-#define FRAME_BASE ((uintptr_t)0x0)
+#define FRAME_BASE ((uintptr_t)PHYS_OFFSET + 0x0)
 // get from mailbox's arm memory
-#define FRAME_END ((uintptr_t)0x3b400000)
+#define FRAME_END ((uintptr_t)PHYS_OFFSET + 0x3b400000)
 
 #define PAGE_SIZE 0x1000 // 4KB
 #define FRAME_BINS_SIZE 12
@@ -27,8 +28,8 @@
 #define FRAME_FREE 0x8
 #define FRAME_INUSE 0x4
 #define FRAME_MEM_CHUNK 0x2
-#define IS_INUSE(frame) (frame.flag & FRAME_INUSE)
-#define IS_MEM_CHUNK(frame) (frame.flag & FRAME_MEM_CHUNK)
+#define IS_INUSE(frames) (frames.flag & FRAME_INUSE)
+#define IS_MEM_CHUNK(frames) (frames.flag & FRAME_MEM_CHUNK)
 
 // for mm_int
 extern char _skernel, _ekernel;
@@ -84,16 +85,20 @@ void *smalloc(size_t size)
 void mm_init()
 {
     init_buddy();
-    memory_reserve((uintptr_t)0, (uintptr_t)0x1000); // Spin tables for multicore boot
+    memory_reserve((uintptr_t)phys_to_virt(0), (uintptr_t)phys_to_virt(0x1000)); // Spin tables for multicore boot
 
-    memory_reserve((uintptr_t)&_skernel, (uintptr_t)&_ekernel); // Kernel image in the physical memory
+    memory_reserve((uintptr_t)IDENTITY_TT_L0_VA, (uintptr_t)IDENTITY_TT_L0_VA + PAGE_SIZE); // PGD's page frame at 0x0
+    memory_reserve((uintptr_t)IDENTITY_TT_L1_VA, (uintptr_t)IDENTITY_TT_L1_VA + PAGE_SIZE); // PUD's page frame at 0x1000
 
-    fdt_traverse(get_initramfs_addr, _dtb_ptr);
-    memory_reserve((uintptr_t)initramfs_start, (uintptr_t)initramfs_end); // Kernel image in the physical memory
+    // memory_reserve((uintptr_t)&_skernel, (uintptr_t)&_ekernel); // Kernel image in the physical memory
+    memory_reserve((uintptr_t)phys_to_virt(0x80000), (uintptr_t)phys_to_virt(0x400000)); // Kernel image in the physical memory
+
+    fdt_traverse(get_initramfs_addr);
+    memory_reserve((uintptr_t)phys_to_virt((unsigned long)initramfs_start), (uintptr_t)phys_to_virt((unsigned long)initramfs_end)); // Kernel image in the physical memory
 
     memory_reserve((uintptr_t)STARTUP_MEM_START, (uintptr_t)STARTUP_MEM_END); // simple simple_allocator
 
-    memory_reserve(dtb_start, dtb_end); // Devicetree
+    memory_reserve((uintptr_t)dtb_start, (uintptr_t)dtb_end); // Devicetree
 
     merge_useful_pages();
 }
@@ -102,7 +107,7 @@ void memory_reserve(uintptr_t start, uintptr_t end)
 {
 
     start = start & ~(PAGE_SIZE - 1);
-    end = align_up(end, PAGE_SIZE);
+    end = align_up(end, PAGE_SIZE) + PHYS_OFFSET;
     for (uintptr_t i = start; i < end; i += PAGE_SIZE)
     {
         int idx = addr2idx((void *)i);
@@ -143,13 +148,14 @@ void merge_useful_pages()
     for (int order = 0; order < MAX_ORDER; order++)
     {
         int page_idx = 0;
-        void *page_addr = 0;
+        void *page_addr = (void *)(FRAME_BASE);
         int buddy_page_idx = 0;
         while (1)
         {
             buddy_page_idx = page_idx ^ (1 << order);
             if (!IS_INUSE(frames[page_idx]))
             {
+
                 if (!IS_INUSE(frames[buddy_page_idx]) &&
                     order == frames[buddy_page_idx].order &&
                     buddy_page_idx < FRAME_ARRAY_SIZE)
@@ -172,7 +178,6 @@ void merge_useful_pages()
                     frames[buddy_page_idx].order = order;
                 }
             }
-
             page_idx += (1 << (order + 1));
             if (page_idx >= FRAME_ARRAY_SIZE)
             {

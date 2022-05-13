@@ -1,7 +1,9 @@
 #ifndef __TIMER_H
 #define __TIMER_H
-#define CORE0_TIMER_IRQ_CTRL ((volatile unsigned int *)(0x40000040))
-#define CORE0_INTERRUPT_SOURCE ((volatile unsigned int *)(0x40000060))
+#include "stddef.h"
+#include "mmu.h"
+#define CORE0_TIMER_IRQ_CTRL ((volatile unsigned int *)(PHYS_OFFSET + 0x40000040))
+#define CORE0_INTERRUPT_SOURCE ((volatile unsigned int *)(PHYS_OFFSET + 0x40000060))
 #define DEFAULT_TIMEOUT 30LL
 #define SCHE_CYCLE 30LL
 #define SYSTEM_TIMER_MSG "system_timeout"
@@ -9,7 +11,6 @@
 #define MS(n) (n * 1LL)
 #define GET_S(n) (n / 1000LL)
 #define GET_MS(n) (n % 1000LL)
-#include "stddef.h"
 
 typedef void (*timer_callback)(size_t);
 

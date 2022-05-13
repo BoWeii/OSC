@@ -112,7 +112,7 @@ size_t utils_strlen(const char *s)
     reboot part
 */
 
-void set(long addr, unsigned int value)
+void set(long addr, unsigned long value)
 {
     volatile unsigned int *point = (unsigned int *)addr;
     *point = value;

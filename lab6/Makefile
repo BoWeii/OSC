@@ -17,13 +17,13 @@ BUILD_IMG:=$(shell find build/ -name '*.img')
 ARC_IMG:=$(shell find archive/ -name '*.img')
 
 SRC_C:=$(shell find src/ -name '*.c')
-SRC_S:=$(shell find src/ -name '*.s')
+SRC_S:=$(shell find src/ -name '*.S')
 
 KER_C:=$(shell find kernel/ -name '*.c')
-KER_S:=$(shell find kernel/ -name '*.s')
+KER_S:=$(shell find kernel/ -name '*.S')
 
 BL_C:=$(shell find bootloader/ -name '*.c')
-BL_S:=$(shell find bootloader/ -name '*.s')
+BL_S:=$(shell find bootloader/ -name '*.S')
 
 USER1_C:=$(shell find users/user1/ -name '*.c')
 USER1_OBJS:= $(USER1_C:%.c=%.o) 
@@ -32,17 +32,17 @@ USER2_C:=$(shell find users/user2/ -name '*.c')
 USER2_OBJS:= $(USER2_C:%.c=%.o) 
 
 OBJS:= $(SRC_C:%.c=%.o) \
-		$(SRC_S:%.s=%.o) \
+		$(SRC_S:%.S=%.o) \
 		rd.o
 
 
 KERNEL_OBJS:=$(KER_C:%.c=%.o) \
-		$(KER_S:%.s=%.o)
+		$(KER_S:%.S=%.o)
 		
 		
 
 BL_OBJS:=$(BL_C:%.c=%.o) \
-		$(BL_S:%.s=%.o) \
+		$(BL_S:%.S=%.o) \
 		src/mini_uart.o src/utils_c.o src/utils_s.o src/memzero.o src/sprintf.o
 
 
@@ -59,7 +59,7 @@ rd.o:$(CPIO)
 	aarch64-linux-gnu-ld -r -b binary -o rd.o $(CPIO)
 
 
-%.o: %.s
+%.o: %.S
 	aarch64-linux-gnu-gcc -g -o $@ -c $<
 
 %.o: %.c

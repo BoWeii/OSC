@@ -31,7 +31,7 @@ typedef struct fdt_header
 typedef void (*fdt_callback)(int type, const char *name, const void *data, uint32_t size);
 void print_dtb(int type, const char *name, const void *data, uint32_t size);
 void get_initramfs_addr(int type, const char *name, const void *data, uint32_t size);
-int fdt_traverse(fdt_callback cb, void *dtb_ptr);
+int fdt_traverse(fdt_callback cb);
 
 extern uintptr_t dtb_end, dtb_start;
 extern char *initramfs_start, *initramfs_end;
