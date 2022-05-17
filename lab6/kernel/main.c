@@ -24,8 +24,8 @@ void kernel_main(void *_dtb_ptr)
     dtb_start=(uintptr_t)_dtb_ptr;
     uart_send_string("Hello, world!\n");
     mm_init();
-    // setup_kernel_space_mapping();
 
+    setup_kernel_space_mapping();
     thread_init();
     thread_create(&shell);
     // exe_new_prog("syscall.img");

@@ -91,6 +91,7 @@ on:
 	sudo screen /dev/ttyUSB0 115200
 qe: $(BUILD)$(K8).img
 	qemu-system-aarch64 -M raspi3 -kernel $< \
+	-display none \
 	-serial null -serial stdio -s \
 	-initrd $(TA_CPIO) \
 	-dtb $(DTB) \

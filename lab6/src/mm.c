@@ -87,8 +87,8 @@ void mm_init()
     init_buddy();
     memory_reserve((uintptr_t)phys_to_virt(0), (uintptr_t)phys_to_virt(0x1000)); // Spin tables for multicore boot
 
-    memory_reserve((uintptr_t)IDENTITY_TT_L0_VA, (uintptr_t)IDENTITY_TT_L0_VA + PAGE_SIZE); // PGD's page frame at 0x0
-    memory_reserve((uintptr_t)IDENTITY_TT_L1_VA, (uintptr_t)IDENTITY_TT_L1_VA + PAGE_SIZE); // PUD's page frame at 0x1000
+    memory_reserve((uintptr_t)IDENTITY_TT_L0_VA, (uintptr_t)IDENTITY_TT_L0_VA + PAGE_SIZE); // PGD's page frame at 0x1000
+    memory_reserve((uintptr_t)IDENTITY_TT_L1_VA, (uintptr_t)IDENTITY_TT_L1_VA + PAGE_SIZE); // PUD's page frame at 0x2000
 
     // memory_reserve((uintptr_t)&_skernel, (uintptr_t)&_ekernel); // Kernel image in the physical memory
     memory_reserve((uintptr_t)phys_to_virt(0x80000), (uintptr_t)phys_to_virt(0x400000)); // Kernel image in the physical memory
@@ -107,7 +107,7 @@ void memory_reserve(uintptr_t start, uintptr_t end)
 {
 
     start = start & ~(PAGE_SIZE - 1);
-    end = align_up(end, PAGE_SIZE) + PHYS_OFFSET;
+    end = align_up(end - PHYS_OFFSET, PAGE_SIZE) + PHYS_OFFSET;
     for (uintptr_t i = start; i < end; i += PAGE_SIZE)
     {
         int idx = addr2idx((void *)i);
@@ -145,38 +145,45 @@ void init_buddy()
 
 void merge_useful_pages()
 {
+    int page_idx = 0;
+    list *page_addr = (list *)(FRAME_BASE);
+    {   //  only insert the 4KB page to frame_bins
+        while (1)
+        {
+            if (!IS_INUSE(frames[page_idx]))
+            {
+                insert_tail(&frame_bins[0], page_addr);
+            }
+            page_idx++;
+            if (page_idx >= FRAME_ARRAY_SIZE)
+            {
+                break;
+            }
+            page_addr = (void *)(FRAME_BASE + page_idx * PAGE_SIZE);
+        }
+    }
+
     for (int order = 0; order < MAX_ORDER; order++)
-    {
-        int page_idx = 0;
-        void *page_addr = (void *)(FRAME_BASE);
+    {   //  merging the pages by left page
+        page_idx = 0;
+        page_addr = (list *)(FRAME_BASE);
         int buddy_page_idx = 0;
+        list *buddy_addr = (list *)(FRAME_BASE);
         while (1)
         {
             buddy_page_idx = page_idx ^ (1 << order);
-            if (!IS_INUSE(frames[page_idx]))
-            {
+            buddy_addr = (void *)(FRAME_BASE + buddy_page_idx * PAGE_SIZE);
 
-                if (!IS_INUSE(frames[buddy_page_idx]) &&
-                    order == frames[buddy_page_idx].order &&
-                    buddy_page_idx < FRAME_ARRAY_SIZE)
-                {
-                    insert_tail(&frame_bins[order + 1], page_addr);
-                    frames[page_idx].order = order + 1;
-                }
-                else
-                {
-                    insert_tail(&frame_bins[order], page_addr);
-                    frames[page_idx].order = order;
-                }
-            }
-            else
+            if (!IS_INUSE(frames[page_idx]) &&
+                frames[page_idx].order == order &&
+                buddy_page_idx < FRAME_ARRAY_SIZE &&
+                !IS_INUSE(frames[buddy_page_idx]) &&
+                frames[buddy_page_idx].order == order)
             {
-                if (buddy_page_idx < FRAME_ARRAY_SIZE &&
-                    !IS_INUSE(frames[buddy_page_idx]))
-                {
-                    insert_tail(&frame_bins[order], (list *)(FRAME_BASE + buddy_page_idx * PAGE_SIZE));
-                    frames[buddy_page_idx].order = order;
-                }
+                unlink((list *)page_addr);
+                unlink((list *)buddy_addr);
+                insert_tail(&frame_bins[order + 1], page_addr);
+                frames[page_idx].order = order + 1;
             }
             page_idx += (1 << (order + 1));
             if (page_idx >= FRAME_ARRAY_SIZE)

@@ -1,6 +1,7 @@
 #include "mmu.h"
 #include "utils_s.h"
 #include "utils_c.h"
+#include "mini_uart.h"
 #include "mm.h"
 
 #define TCR_CONFIG_REGION_48bit (((64 - 48) << 0) | ((64 - 48) << 16))
@@ -43,28 +44,27 @@ void setup_identity_mapping()
 }
 
 void setup_kernel_space_mapping() {
-    /* 2MB block mapping */
+    /*  three-level 2MB block mapping    */
+
+    /*  0x00000000 ~ 0x3F000000 for normal mem  */
+    pd_t *p0 = kcalloc(PAGE_SIZE);
+    for (int i = 0; i < 504; i++) {
+        p0[i] = (i << 21) | PD_ACCESS | (MAIR_IDX_NORMAL_NOCACHE << 2)  | PD_BLOCK;
+    }
+    /*  0x3F000000 ~ 0x40000000 for device mem  */
+    for (int i = 504; i < 512; i++) {
+        p0[i] = (i << 21) | PD_ACCESS | (MAIR_IDX_DEVICE_nGnRnE << 2) | PD_BLOCK;
+    }
+
+    /*  0x40000000 ~ 0x80000000 for device mem  */
     pd_t *p1 = kcalloc(PAGE_SIZE);
-    for (int i = 0; i < 256; i++) {
-        p1[i] = (i << 21) | PD_ACCESS | (MAIR_IDX_DEVICE_nGnRnE << 2) | PD_NS | PD_BLOCK;
-    }
-    for (int i = 256; i < 512; i++) {
-        p1[i] = (i << 21) | PD_ACCESS | (MAIR_IDX_NORMAL_NOCACHE << 2) | PD_NS | PD_BLOCK;
-    }
-
-    pd_t *p2 = kcalloc(PAGE_SIZE);
     for (int i = 0; i < 512; i++) {
-        p2[i] = 0x40000000 | (i << 21) | PD_ACCESS | (MAIR_IDX_DEVICE_nGnRnE << 2) | PD_NS | PD_BLOCK;
+        p1[i] = 0x40000000 | (i << 21) | PD_ACCESS | (MAIR_IDX_DEVICE_nGnRnE << 2) | PD_BLOCK;
     }
 
-    asm("dsb ish\n\t");         /* ensure write has completed */
+    asm volatile("dsb ish\n\t");         /* ensure write has completed */
 
-    IDENTITY_TT_L1_VA[0] = (pd_t)virt_to_phys(p1) | PD_TABLE;
-    IDENTITY_TT_L1_VA[1] = (pd_t)virt_to_phys(p2) | PD_TABLE;
+    IDENTITY_TT_L1_VA[0] = (pd_t)virt_to_phys(p0) | PD_TABLE;
+    IDENTITY_TT_L1_VA[1] = (pd_t)virt_to_phys(p1) | PD_TABLE;
 
-    asm(
-        "tlbi vmalle1is\n\t"    /* invalidate all TLB entries */
-        "dsb ish\n\t"           /* ensure completion of TLB invalidatation */
-        "isb\n\t"               /* clear pipeline */
-    );
 }

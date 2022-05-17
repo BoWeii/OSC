@@ -75,9 +75,14 @@ void irq_handler()
     }
 }
 
+int a = 0;
 void curr_sync_handler()
 {
-    uart_send_string("!!! in current sync handler !!!\n");
+    if (!a)
+    {
+        uart_send_string("!!! in current sync handler !!!\n");
+        a = 1;
+    }
     return;
 }
 
