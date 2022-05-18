@@ -110,6 +110,7 @@ struct task *create_task()
     new_task->timeout = get_current_time() + DEFAULT_TIMEOUT;
     new_task->signal = NULL;
     new_task->sig_context = NULL;
+    new_task->ttbr0 = NULL;
     return new_task;
 }
 
@@ -135,6 +136,7 @@ void switch_task(struct task *next)
         return;
     }
     switch_to(&current->cpu_context, &next->cpu_context);
+    replace_page_table();
 }
 
 struct task *get_task(pid_t target)

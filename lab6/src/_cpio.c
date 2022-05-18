@@ -4,9 +4,7 @@
 #include "mini_uart.h"
 #include "timer.h"
 #include "mm.h"
-
-#define KSTACK_SIZE 0x2000
-#define USTACK_SIZE 0x2000
+#include "mmu.h"
 
 unsigned int hex2dec(char *s)
 {
@@ -91,7 +89,7 @@ void cpio_cat(const char *filename)
     }
 }
 
-size_t cpio_load_program(const char *filename, void **target_addr)
+size_t cpio_load_program(const char *filename, void **target_addr, pd_t *table)
 {
     char *prog_addr = findFile(filename);
     if (prog_addr)
@@ -104,11 +102,11 @@ size_t cpio_load_program(const char *filename, void **target_addr)
         align(&headerPathname_size, 4);
         align(&file_size, 4);
 
-        uart_printf("load the %s\n",prog_addr + sizeof(cpio_header));
+        uart_printf("load the %s\n", prog_addr + sizeof(cpio_header));
 
         char *file_content = prog_addr + headerPathname_size;
-        *target_addr = kcalloc(file_size);
-        memcpy(*target_addr, file_content, file_size);
+        *target_addr = alloc_prog(table, file_size, file_content);
+
         return file_size;
     }
     else

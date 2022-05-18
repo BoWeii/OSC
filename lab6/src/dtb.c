@@ -113,11 +113,11 @@ void get_initramfs_addr(int type, const char *name, const void *data, uint32_t s
 {
     if (type == FDT_PROP && !utils_str_compare(name, "linux,initrd-start"))
     {
-        initramfs_start = (char *)(uintptr_t)get_le2be_uint(data);
+        initramfs_start = (char *)pa2va((uintptr_t)get_le2be_uint(data));
     }
     else if (type == FDT_PROP && !utils_str_compare(name, "linux,initrd-end"))
     {
-        initramfs_end = (char *)(uintptr_t)get_le2be_uint(data);
+        initramfs_end = (char *)pa2va((uintptr_t)get_le2be_uint(data));
     }
 }
 

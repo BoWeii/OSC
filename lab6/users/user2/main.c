@@ -259,10 +259,10 @@ unsigned int uart_printf(char *fmt, ...)
 #define TAG_REQUEST_CODE 0x00000000
 #define END_TAG 0x00000000
 
-unsigned int __attribute__((aligned(16))) mailbox[8];
-
+// unsigned int __attribute__((aligned(16))) mailbox[8];
 unsigned int get_board_revision()
 {
+    unsigned int __attribute__((aligned(16))) mailbox[8];
     mailbox[0] = 7 * 4; // buffer size in bytes
     mailbox[1] = REQUEST_CODE;
     // tags begin
@@ -272,15 +272,16 @@ unsigned int get_board_revision()
     mailbox[5] = 0; // value buffer
     // tags end
     mailbox[6] = END_TAG;
-
-    mailbox_call(MAILBOX_CH_PROP, mailbox); // message passing procedure call, you should implement it following the 6 steps provided above.
+    mailbox_call(MAILBOX_CH_PROP, &mailbox[0]); // message passing procedure call, you should implement it following the 6 steps provided above.
     return mailbox[5];
 }
 
 int start(void)
 {
     // char buf1[0x10] = {0};
+    uart_printf("[User2] Into start\n");
     int pid = getpid();
+
     uart_printf("[User2] pid:%d\n", pid);
 
     unsigned int revision = get_board_revision();
@@ -298,6 +299,7 @@ int start(void)
         uart_printf("[User2] parent: child pid: %d\n", pid);
     }
     uart_printf("[User2 ] exit\n");
+    
     exit();
     return 0;
 }

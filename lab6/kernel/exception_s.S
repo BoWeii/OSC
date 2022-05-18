@@ -110,6 +110,7 @@
 
 .global restore_regs_eret
 restore_regs_eret:
+    bl replace_page_table
     ldp x0, x1, [sp, 16 * 16]
     msr elr_el1, x0
     msr spsr_el1, x1

@@ -27,8 +27,8 @@ void kernel_main(void *_dtb_ptr)
 
     setup_kernel_space_mapping();
     thread_init();
-    thread_create(&shell);
-    // exe_new_prog("syscall.img");
+    // thread_create(&shell);
+    exe_new_prog("vm.img");
     timeout_event_init();
     add_timer((timer_callback)thread_schedule, (size_t)0, MS(SCHE_CYCLE));
     enable_interrupt();

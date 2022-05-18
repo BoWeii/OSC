@@ -3,7 +3,7 @@
 #include "list.h"
 #include "utils_s.h"
 #include "sche.h"
-#define STACK_SIZE 0x2000
+#define STACK_SIZE 0x4000
 
 void thread_kill_zombies();
 void thread_schedule(size_t _);

@@ -51,8 +51,10 @@ void sys_exit(TrapFrame *_regs)
 void sys_mbox_call(TrapFrame *_regs)
 {
     unsigned int channel = _regs->regs[0];
-    unsigned int *mailbox = (unsigned int *)_regs->regs[1];
-    mailbox_call(channel, mailbox);
+    unsigned int *mailbox_va = (unsigned int *)_regs->regs[1];
+
+    void *mailbox_pa = (unsigned int *)el0_va2pa((unsigned long)mailbox_va);
+    mailbox_call(channel, mailbox_pa);
 }
 void sys_kill_pid(TrapFrame *_regs)
 {

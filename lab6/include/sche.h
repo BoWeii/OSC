@@ -2,6 +2,7 @@
 #define __SCHE_H
 #include "list.h"
 #include "signal.h"
+#include "mmu.h"
 
 typedef unsigned long pid_t;
 typedef enum
@@ -44,6 +45,7 @@ struct task
     list list;
     struct signal *signal;
     struct signal_context *sig_context;
+    pd_t *ttbr0;
 };
 
 extern list running_queue, waiting_queue, stopped_queue;

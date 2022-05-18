@@ -19,23 +19,23 @@ static struct task *fork_context(TrapFrame *_regs)
 
     child->need_resched = 0;
 
-    child->user_stack = kmalloc(STACK_SIZE);
+    child->ttbr0 = kcalloc(PAGE_SIZE);
+    child->user_stack = alloc_stack(child->ttbr0, STACK_SIZE);
     memcpy(child->user_stack, current->user_stack, STACK_SIZE);
 
-    child->kernel_stack = kmalloc(STACK_SIZE);
-    TrapFrame *trapframe = (TrapFrame *)((unsigned long)child->kernel_stack + STACK_SIZE - sizeof(TrapFrame));
-    memcpy(trapframe, _regs, sizeof(TrapFrame));
+    child->kernel_stack = kcalloc(STACK_SIZE);
+    TrapFrame *child_trapframe = (TrapFrame *)((unsigned long)child->kernel_stack + STACK_SIZE - sizeof(TrapFrame));
+    memcpy(child_trapframe, _regs, sizeof(TrapFrame));
 
-    child->user_prog = kmalloc(current->user_prog_size);
-    memcpy(child->user_prog, current->user_prog, current->user_prog_size);
+    child->user_prog = alloc_prog(child->ttbr0, current->user_prog_size, current->user_prog);
 
-    trapframe->regs[30] = (unsigned long)child->user_prog + (_regs->regs[30] - (unsigned long)current->user_prog); // using x30 as link return register while function call on AArch64
-    trapframe->sp = (unsigned long)child->user_stack + (_regs->sp - (unsigned long)current->user_stack);
-    trapframe->pc = (unsigned long)child->user_prog + (_regs->pc - (unsigned long)current->user_prog);
-    trapframe->regs[0] = 0; // child process : return 0
+    setup_peripheral_identity(child->ttbr0);
+    
+    child_trapframe->regs[0] = 0; // child process : return 0
 
-    child->cpu_context.sp = (unsigned long)trapframe;
+    child->cpu_context.sp = (unsigned long)child_trapframe;
     child->cpu_context.lr = (unsigned long)restore_regs_eret;
+
     return child;
 }
 

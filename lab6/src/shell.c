@@ -122,7 +122,7 @@ void hello()
 void info()
 {
     get_board_revision();
-    get_arm_memory();
+    // get_arm_memory();
 }
 
 void parse_command(char *buffer)

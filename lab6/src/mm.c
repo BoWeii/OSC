@@ -74,7 +74,6 @@ void *smalloc(size_t size)
         return NULL;
     }
     smalloc_cur += (unsigned int)size;
-    // uart_printf("return addr at %x\n",smalloc_ret);
     return smalloc_ret;
 }
 
@@ -85,20 +84,19 @@ void *smalloc(size_t size)
 void mm_init()
 {
     init_buddy();
-    memory_reserve((uintptr_t)phys_to_virt(0), (uintptr_t)phys_to_virt(0x1000)); // Spin tables for multicore boot
+    memory_reserve((uintptr_t)pa2va(0), (uintptr_t)pa2va(0x1000)); // Spin tables for multicore boot 
 
-    memory_reserve((uintptr_t)IDENTITY_TT_L0_VA, (uintptr_t)IDENTITY_TT_L0_VA + PAGE_SIZE); // PGD's page frame at 0x1000
-    memory_reserve((uintptr_t)IDENTITY_TT_L1_VA, (uintptr_t)IDENTITY_TT_L1_VA + PAGE_SIZE); // PUD's page frame at 0x2000
+    memory_reserve((uintptr_t)IDENTITY_TT_L0_VA, (uintptr_t)IDENTITY_TT_L0_VA + PAGE_SIZE); // PGD's page frame 
+    memory_reserve((uintptr_t)IDENTITY_TT_L1_VA, (uintptr_t)IDENTITY_TT_L1_VA + PAGE_SIZE); // PUD's page frame 
 
-    // memory_reserve((uintptr_t)&_skernel, (uintptr_t)&_ekernel); // Kernel image in the physical memory
-    memory_reserve((uintptr_t)phys_to_virt(0x80000), (uintptr_t)phys_to_virt(0x400000)); // Kernel image in the physical memory
+    memory_reserve((uintptr_t)&_skernel, (uintptr_t)&_ekernel); // Kernel image  
 
     fdt_traverse(get_initramfs_addr);
-    memory_reserve((uintptr_t)phys_to_virt((unsigned long)initramfs_start), (uintptr_t)phys_to_virt((unsigned long)initramfs_end)); // Kernel image in the physical memory
+    memory_reserve((uintptr_t)initramfs_start, (uintptr_t)initramfs_end); // Initramfs  
 
-    memory_reserve((uintptr_t)STARTUP_MEM_START, (uintptr_t)STARTUP_MEM_END); // simple simple_allocator
+    memory_reserve((uintptr_t)STARTUP_MEM_START, (uintptr_t)STARTUP_MEM_END); // Simple allocator 
 
-    memory_reserve((uintptr_t)dtb_start, (uintptr_t)dtb_end); // Devicetree
+    memory_reserve((uintptr_t)dtb_start, (uintptr_t)dtb_end); // Devicetree 
 
     merge_useful_pages();
 }

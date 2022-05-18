@@ -5,6 +5,7 @@ LINKER=linker.ld
 START=start
 CPIO:=archive/initramfs.cpio
 TA_CPIO:=archive/TA/initramfs.cpio
+TA_IMG:=archive/TA/vm.img
 
 DTB:=archive/bcm2710-rpi-3-b-plus.dtb
 USER_DIR:=users/user
@@ -14,7 +15,7 @@ BUILD:=build/
 
 BUILD_ELF:=$(shell find build/ -name '*.elf')
 BUILD_IMG:=$(shell find build/ -name '*.img')
-ARC_IMG:=$(shell find archive/ -name '*.img')
+ARC_ROOTFS_IMG:=$(shell find archive/rootfs -name '*.img')
 
 SRC_C:=$(shell find src/ -name '*.c')
 SRC_S:=$(shell find src/ -name '*.S')
@@ -33,7 +34,6 @@ USER2_OBJS:= $(USER2_C:%.c=%.o)
 
 OBJS:= $(SRC_C:%.c=%.o) \
 		$(SRC_S:%.S=%.o) \
-		rd.o
 
 
 KERNEL_OBJS:=$(KER_C:%.c=%.o) \
@@ -51,7 +51,8 @@ BL_OBJS:=$(BL_C:%.c=%.o) \
 all: $(BUILD)$(USER1).img\
      $(BUILD)$(USER2).img \
      $(BUILD)$(K8).img \
-     $(BUILD)$(BL).img 
+     $(BUILD)$(BL).img \
+	 rd.o
 
 
 
@@ -85,20 +86,20 @@ $(BUILD)$(USER2).img:$(USER2_OBJS)
 	cp $@ archive/rootfs/ 
 
 $(CPIO):
+	cp $(TA_IMG) archive/rootfs
 	cd archive/rootfs&&find . | cpio -o -H newc > ../initramfs.cpio
 
 on:
 	sudo screen /dev/ttyUSB0 115200
 qe: $(BUILD)$(K8).img
 	qemu-system-aarch64 -M raspi3 -kernel $< \
-	-display none \
 	-serial null -serial stdio -s \
-	-initrd $(TA_CPIO) \
+	-initrd $(CPIO) \
 	-dtb $(DTB) \
 
 clean:
 	$(RM) $(BUILD_ELF) $(CPIO) \
 	$(OBJS) $(KERNEL_OBJS) $(BL_OBJS) $(USER1_OBJS) $(USER2_OBJS)\
-	$(ARC_IMG) \
-	$(BUILD_IMG)
+	$(ARC_ROOTFS_IMG) \
+	$(BUILD_IMG) \
 	

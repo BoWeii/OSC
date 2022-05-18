@@ -1,6 +1,8 @@
 #ifndef __CPIO_H
 #define __CPIO_H
 #include <stddef.h>
+#include "mmu.h"
+
 /*
     cpio archive comprises a header record with basic numeric metadata followed by
     the full pathname of the entry and the file data.
@@ -27,5 +29,5 @@ typedef struct cpio_header
 void cpio_ls();
 void cpio_cat(const char *filename);
 char *findFile(const char *name);
-size_t cpio_load_program(const char *filename, void **put_addr);
+size_t cpio_load_program(const char *filename, void **put_addr, pd_t *table);
 #endif

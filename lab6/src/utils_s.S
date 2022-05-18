@@ -11,6 +11,7 @@ get_el:
 
 .global switch_to
 switch_to:
+    
     mov x9, sp
     stp x19, x20, [x0, #0x0]
     stp x21, x22, [x0, #0x10]
@@ -30,3 +31,4 @@ switch_to:
     mov sp,  x9
     msr tpidr_el1, x1
     ret
+

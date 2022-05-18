@@ -42,7 +42,6 @@ unsigned int get_board_revision()
     return mailbox[5];
 }
 
-
 void get_arm_memory()
 {
     mailbox[0] = 8 * 4; // buffer size in bytes

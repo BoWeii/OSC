@@ -38,6 +38,8 @@ void lower_irq_handler()
     set_expired_time(2);
 }
 
+int data_abort = 0;
+int ins_abort = 0;
 void lower_sync_handler(TrapFrame *_regs)
 {
     unsigned long esr = read_sysreg(esr_el1); // cause of that exception
@@ -50,10 +52,18 @@ void lower_sync_handler(TrapFrame *_regs)
         disable_interrupt();
         break;
     case ESR_ELx_EC_DABT_LOW:
-        uart_send_string("in Data Abort\n");
+    if (!data_abort)
+        {
+            data_abort = 1;
+            uart_send_string("in Data  Abort\n");
+        }
         break;
     case ESR_ELx_EC_IABT_LOW:
-        uart_send_string("in Instruction  Abort\n");
+        if (!ins_abort)
+        {
+            ins_abort = 1;
+            uart_send_string("in Instruction  Abort\n");
+        }
         break;
     default:
         return;
