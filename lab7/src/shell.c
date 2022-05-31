@@ -11,6 +11,7 @@
 #include "exec.h"
 #include "thread.h"
 #include <stddef.h>
+#include "vfs.h"
 #define BUFFER_MAX_SIZE 256u
 #define COMMNAD_LENGTH_MAX 20u
 
@@ -177,7 +178,10 @@ void parse_command(char *buffer)
     {
         fdt_traverse(print_dtb);
     }
-
+        else if (utils_str_compare(buffer, "fs") == 0)
+    {
+        vfs_test();
+    }
     else if (utils_str_compare(buffer, "async") == 0)
     {
         test_uart_async();

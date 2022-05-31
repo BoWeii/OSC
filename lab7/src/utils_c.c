@@ -28,6 +28,11 @@ int utils_strncmp(const char *a, const char *b, size_t n)
         i++;
     return a[i] - b[i];
 }
+
+int utils_str_delim(const char *str, const char *delim)
+{
+    // TODO
+}
 void utils_newline2end(char *str)
 {
     while (*str != '\0')
@@ -167,10 +172,12 @@ void memcpy(void *dst, const void *src, size_t n)
     }
 }
 
-void *memset(void *s, int c, size_t n) {
-  char *p = s;
-  for (size_t i = 0; i < n; i++) {
-    p[i] = c;
-  }
-  return s;
+void *memset(void *s, int c, size_t n)
+{
+    char *p = s;
+    for (size_t i = 0; i < n; i++)
+    {
+        p[i] = c;
+    }
+    return s;
 }
