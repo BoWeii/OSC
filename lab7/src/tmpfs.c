@@ -3,6 +3,7 @@
 #include "utils_c.h"
 #include "mm.h"
 #include "stat.h"
+#include "mini_uart.h"
 
 static int lookup(struct vnode *dir_node, struct vnode **target, const char *component_name);
 static int create(struct vnode *dir_node, struct vnode **target, const char *component_name);
@@ -28,7 +29,7 @@ struct file_operations tmpfs_f_ops = {
 
 int setup_mount(struct filesystem *fs, struct mount *mount)
 {
-    mount->root = vnode_create("/", S_IFDIR);
+    //  should set mount->root as a obj before call setup_mount
     mount->root->mount = mount;
     mount->root->f_ops = &tmpfs_f_ops;
     mount->root->v_ops = &tmpfs_v_ops;
@@ -51,10 +52,21 @@ static int lookup(struct vnode *dir_node, struct vnode **target, const char *com
 }
 static int create(struct vnode *dir_node, struct vnode **target, const char *component_name)
 {
+    if (!lookup(dir_node, target, component_name))
+    {
+        uart_printf("[create] the %s file is already exist\n", component_name);
+        return -1;
+    }
+
+#ifdef FS_DEBUG
+    uart_printf("[fs] create file:%s, parent:%s\n", component_name, dir_node->name);
+#endif
+
     struct vnode *new_vnode = vnode_create(component_name, S_IFREG);
     new_vnode->mount = dir_node->mount;
     new_vnode->v_ops = dir_node->v_ops;
     new_vnode->f_ops = dir_node->f_ops;
+    new_vnode->parent = dir_node;
 
     insert_tail(&dir_node->childs, &new_vnode->self);
     dir_node->child_num += 1;
@@ -64,13 +76,37 @@ static int create(struct vnode *dir_node, struct vnode **target, const char *com
 }
 static int mkdir(struct vnode *dir_node, struct vnode **target, const char *component_name)
 {
-    // TODO
+    if (!lookup(dir_node, target, component_name))
+    {
+        uart_printf("[mkdir] the %s directory is already exist\n", component_name);
+        return -1;
+    }
+
+#ifdef FS_DEBUG
+    uart_printf("[fs] mkdir:%s, parent:%s\n", component_name, dir_node->name);
+#endif
+
+    struct vnode *new_vnode = vnode_create(component_name, S_IFDIR);
+    new_vnode->mount = dir_node->mount;
+    new_vnode->v_ops = dir_node->v_ops;
+    new_vnode->f_ops = dir_node->f_ops;
+    new_vnode->parent = dir_node;
+
+    insert_tail(&dir_node->childs, &new_vnode->self);
+    dir_node->child_num += 1;
+
+    *target = new_vnode;
     return 0;
 }
 
 static int write(struct file *file, const void *buf, size_t len)
 {
     struct vnode *vnode = file->vnode;
+    if (!S_ISREG(vnode->f_mode))
+    {
+        uart_send_string("[write] not a regular file\n");
+        return -1;
+    }
     if (vnode->content_size <= file->f_pos + len)
     { // enlarge content, +1 for EOF
         void *new_content = kcalloc(sizeof(file->f_ops + len + 1));
@@ -92,7 +128,11 @@ static int read(struct file *file, void *buf, size_t len)
     // 2. block if nothing to read for FIFO type
     // 3. return read size or error code if an error occurs.
     struct vnode *vnode = file->vnode;
-
+    if (!S_ISREG(vnode->f_mode))
+    {
+        uart_send_string("[write] not a regular file\n");
+        return -1;
+    }
     int min = (len > vnode->content_size - file->f_pos - 1) ? vnode->content_size - file->f_pos - 1 : len; // -1 for EOF;
     if (min == 0)
     {
@@ -134,6 +174,7 @@ struct vnode *vnode_create(const char *name, unsigned int flags)
     list_init(&vnode->childs);
     list_init(&vnode->self);
     vnode->child_num = 0;
+    vnode->parent = NULL;
 
     size_t name_len = utils_strlen(name);
     vnode->name = kcalloc(sizeof(name_len));

@@ -4,6 +4,7 @@
 #include "stat.h"
 #include "list.h"
 
+// #define FS_DEBUG
 #define O_CREAT 00000100
 struct vnode
 {
@@ -14,6 +15,7 @@ struct vnode
     list childs;
     size_t child_num;
     list self;
+    struct vnode *parent;
     char *name;
     unsigned int f_mode;
 

@@ -32,7 +32,9 @@ int utils_strncmp(const char *a, const char *b, size_t n)
 int utils_str_delim(const char *str, const char *delim)
 {
     // TODO
+    return 0;
 }
+
 void utils_newline2end(char *str)
 {
     while (*str != '\0')
