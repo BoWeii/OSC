@@ -5,6 +5,7 @@
 #include "list.h"
 
 // #define FS_DEBUG
+#define FD_TABLE_SIZE 16
 #define O_CREAT 00000100
 struct vnode
 {

@@ -114,8 +114,8 @@ int vfs_open(const char *pathname, int flags, struct file **target)
             }
             else
             { // dir
-                itr->v_ops->mkdir(itr, &target_node, prefix);
-                itr = target_node;
+                uart_printf("[vfs_open] No such a directory exist\n");
+                return -1;
             }
         }
         else
@@ -131,10 +131,6 @@ int vfs_open(const char *pathname, int flags, struct file **target)
         }
     }
     (*target)->vnode = target_node;
-
-    // lookup error code shows if file exist or not or other error occurs
-    // 4. Return error code if fails
-    // TODO
     return 0;
 }
 
@@ -156,7 +152,6 @@ int vfs_read(struct file *file, void *buf, size_t len)
 
 int vfs_mkdir(const char *pathname)
 {
-    // it will mkdir the multi-level directory instead of stopping the traverse while encountering the inexistence  directory
     struct vnode *target_node = NULL;
     char prefix[COMPONENT_SIZE] = {0};
 
@@ -168,16 +163,20 @@ int vfs_mkdir(const char *pathname)
         _pathname = next_lvl_path(_pathname, prefix, COMPONENT_SIZE);
         if (itr->v_ops->lookup(itr, &target_node, prefix) == -1)
         { // not found
-            itr->v_ops->mkdir(itr, &target_node, prefix);
-            itr = target_node;
-            if (!_pathname) // encounter end
+            if (!_pathname)
+            { // encounter end
+                itr->v_ops->mkdir(itr, &target_node, prefix);
+                itr = target_node;
                 return 0;
+            }
+            uart_printf("[vfs_mkdir] No such a directory exist during traversing\n");
+            return -1;
         }
         else
         { //  found
             if (S_ISDIR(target_node->f_mode) && !_pathname)
             {
-                uart_printf("[vfs_mkdir] the %s is already exist\n", pathname);
+                uart_printf("[vfs_mkdir] the %s is already exist\n",pathname);
                 return -1;
             }
             else if (S_ISDIR(target_node->f_mode))
@@ -230,7 +229,6 @@ int vfs_lookup(const char *pathname, struct vnode **target)
     while (1)
     {
         _pathname = next_lvl_path(_pathname, prefix, COMPONENT_SIZE);
-        // uart_printf("[vfs_lookup] _pathname=%s, prefix=%s\n", _pathname, prefix);
         if (itr->v_ops->lookup(itr, &target_node, prefix) == -1)
         {
             return -1;
@@ -267,13 +265,14 @@ void vfs_test()
 {
     struct file *f1;
 
-    if (vfs_open("/dir1/dir2/text", O_CREAT, &f1))
-    {
-        uart_send_string("[v] cant't open \n");
-    }
+    vfs_open("/dir1/dir2/text", O_CREAT, &f1);
+    vfs_mkdir("/dir1/dir2");
+    vfs_mkdir("/dir1");
+    vfs_mkdir("/dir1");
+    vfs_mkdir("/dir1/dir1");
+    vfs_mkdir("/dir1/dir2");
 
-    vfs_close(f1);
-    if (!vfs_open("/dir1/dir2/text", 0, &f1))
+    if (!vfs_open("/dir1/dir2/text", O_CREAT, &f1))
     {
         uart_send_string("[v] open the /dir1/dir2/text \n");
     }
@@ -295,4 +294,5 @@ void vfs_test()
     {
         uart_send_string("[v] vfs_mount /dir1/dir2/dir3 success \n");
     }
+    
 }
