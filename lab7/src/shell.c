@@ -154,7 +154,7 @@ void parse_command(char *buffer)
     }
     else if (utils_str_compare(buffer, "exe") == 0)
     {
-        exe_new_prog("user2.img");
+        exe_new_prog("/initramfs/user2.img");
     }
         else if (utils_str_compare(buffer, "wtf") == 0)
     {

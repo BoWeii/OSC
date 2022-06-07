@@ -27,13 +27,20 @@ struct file_operations tmpfs_f_ops = {
     lseek64,
 };
 
-int setup_mount(struct filesystem *fs, struct mount *mount)
+static int setup_mount(struct filesystem *fs, struct mount *mount)
 {
     //  should set mount->root as a obj before call setup_mount
     mount->root->mount = mount;
     mount->root->f_ops = &tmpfs_f_ops;
     mount->root->v_ops = &tmpfs_v_ops;
     mount->fs = fs;
+
+    // clear the internal content
+    list_init(&mount->root->childs);
+    mount->root->child_num = 0;
+    mount->root->content = NULL;
+    mount->root->content_size = 0;
+
     return 0;
 }
 
@@ -111,7 +118,10 @@ static int write(struct file *file, const void *buf, size_t len)
     { // enlarge content, +1 for EOF
         void *new_content = kcalloc(sizeof(file->f_ops + len + 1));
         memcpy(new_content, vnode->content, vnode->content_size); // origin data;
-        kfree(vnode->content);
+        if (vnode->content)
+        { // avoid the free the 0 in beginning
+            kfree(vnode->content);
+        }
 
         vnode->content = new_content;
         vnode->content_size = file->f_pos + len + 1; // pos=22  len=8  30
@@ -120,13 +130,10 @@ static int write(struct file *file, const void *buf, size_t len)
     memcpy(vnode->content + file->f_pos, buf, len);
     file->f_pos += len;
 
-    return 0;
+    return len;
 }
 static int read(struct file *file, void *buf, size_t len)
 {
-    // 1. read min(len, readable size) byte to buf from the opened file.
-    // 2. block if nothing to read for FIFO type
-    // 3. return read size or error code if an error occurs.
     struct vnode *vnode = file->vnode;
     if (!S_ISREG(vnode->f_mode))
     {
@@ -158,32 +165,11 @@ static long lseek64(struct file *file, long offset, int whence)
     return 0;
 }
 
-struct filesystem *tmfps_create()
+struct filesystem *tmpfs_create()
 {
     struct filesystem *fs = kmalloc(sizeof(struct filesystem));
     fs->name = "tmpfs";
     fs->setup_mount = &setup_mount;
     list_init(&fs->list);
     return fs;
-}
-
-struct vnode *vnode_create(const char *name, unsigned int flags)
-{
-    struct vnode *vnode = kcalloc(sizeof(struct vnode));
-
-    list_init(&vnode->childs);
-    list_init(&vnode->self);
-    vnode->child_num = 0;
-    vnode->parent = NULL;
-
-    size_t name_len = utils_strlen(name);
-    vnode->name = kcalloc(sizeof(name_len));
-    memcpy(vnode->name, name, name_len);
-
-    vnode->f_mode = flags;
-
-    vnode->content = NULL;
-    vnode->content_size = 0;
-
-    return vnode;
 }

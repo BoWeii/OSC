@@ -2,7 +2,7 @@
 #define __TMPFS_H_
 
 #define COMPONENT_SIZE 16
-struct filesystem *tmfps_create();
+struct filesystem *tmpfs_create();
 struct vnode* vnode_create(const char *name, unsigned int flags);
 
 extern struct file_operations tmpfs_f_ops;

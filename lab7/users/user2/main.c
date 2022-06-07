@@ -291,8 +291,8 @@ int start(void)
 
     if (pid == 0)
     {
-        uart_printf("[User2] child: exec user1.img\r\n");
-        exec("user1.img", NULL);
+        uart_printf("[User2] child: exec /initramfs/user1.img\r\n");
+        exec("/initramfs/user1.img", NULL);
     }
     else
     {

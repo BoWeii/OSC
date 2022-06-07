@@ -20,6 +20,13 @@ enum {
     SYS_SIGNAL,
     SYS_SIGKILL,
     SYS_SIGRETURN,  //10
+    SYS_OPEN,
+    SYS_CLOSE,
+    SYS_WRITE,
+    SYS_READ,
+    SYS_MKDIR,      //15
+    SYS_MOUNT,
+    SYS_CHDIR,
     NUM_syscalls
 };
 

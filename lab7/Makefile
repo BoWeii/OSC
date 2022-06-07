@@ -5,7 +5,7 @@ LINKER=linker.ld
 START=start
 CPIO:=archive/initramfs.cpio
 TA_CPIO:=archive/TA/initramfs.cpio
-TA_IMG:=archive/TA/vm.img
+TA_IMG:=archive/TA/vfs1.img
 
 DTB:=archive/bcm2710-rpi-3-b-plus.dtb
 USER_DIR:=users/user

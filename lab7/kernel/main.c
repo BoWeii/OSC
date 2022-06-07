@@ -27,11 +27,11 @@ void kernel_main(void *_dtb_ptr)
     mm_init();
 
     setup_kernel_space_mapping();
-    init_rootfs();
+    fs_init();
 
     thread_init();
-    thread_create(&shell);
-    // exe_new_prog("vm.img");
+    // thread_create(&shell);
+    exe_new_prog("/initramfs/vfs1.img");
     timeout_event_init();
     add_timer((timer_callback)thread_schedule, (size_t)0, MS(SCHE_CYCLE));
     enable_interrupt();

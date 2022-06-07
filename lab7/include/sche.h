@@ -3,6 +3,7 @@
 #include "list.h"
 #include "signal.h"
 #include "mmu.h"
+#include "vfs.h"
 
 typedef unsigned long pid_t;
 typedef enum
@@ -46,6 +47,8 @@ struct task
     struct signal *signal;
     struct signal_context *sig_context;
     pd_t *ttbr0;
+    struct vnode *pwd;
+    struct file *fd_table[FD_TABLE_SIZE];
 };
 
 extern list running_queue, waiting_queue, stopped_queue;

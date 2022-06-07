@@ -7,6 +7,7 @@
 #include "current.h"
 #include "thread.h"
 #include "mini_uart.h"
+#include "vfs.h"
 #include "mmu.h"
 
 static void replace_user_context(void *prog, size_t data_size, pd_t *ttbr0)
@@ -49,14 +50,19 @@ static void init_user_prog()
 
 int do_exec(const char *path, const char *argv[])
 {
-    void *target_addr;
     pd_t *ttbr0 = kcalloc(PAGE_SIZE);
-    size_t data_size = cpio_load_program(path, &target_addr, ttbr0);
+    struct file *file;
+    if (vfs_open(path, 0, &file))
+    {
+        uart_send_string("[do_exec] fail to lookup\n");
+    }
+    size_t data_size = file->vnode->content_size;
     if (data_size == -1)
     {
         uart_send_string("!! do_exec fail !!\n");
         return -1;
     }
+    void *target_addr = alloc_prog(ttbr0, data_size, file->vnode->content);
 
     setup_peripheral_identity(ttbr0);
     replace_user_context(target_addr, data_size, ttbr0);
@@ -64,18 +70,23 @@ int do_exec(const char *path, const char *argv[])
     return 0;
 }
 
-void exe_new_prog(char *filename)
+void exe_new_prog(char *path)
 {
     pd_t *ttbr0 = kcalloc(PAGE_SIZE);
     setup_peripheral_identity(ttbr0);
 
-    void *target_addr;
-    size_t data_size = cpio_load_program(filename, &target_addr, ttbr0);
+    struct file *file;
+    if (vfs_open(path, 0, &file))
+    {
+        uart_send_string("[exe_new_prog] fail to lookup\n");
+    }
+    size_t data_size = file->vnode->content_size;
     if (data_size == -1)
     {
-        uart_send_string("!! exe_new_prog fail !!\n");
-        return;
+        uart_send_string("[exe_new_prog] data_size==-1\n");
+        return ;
     }
+    void *target_addr = alloc_prog(ttbr0, data_size, file->vnode->content);
 
     struct task *prog = thread_create(init_user_prog);
 

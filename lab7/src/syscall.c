@@ -125,6 +125,96 @@ void sys_sigreturn(TrapFrame *_regs)
     current->sig_context = NULL;
     enable_interrupt();
 }
+void sys_open(TrapFrame *_regs)
+{
+    const char *pathname = (char *)_regs->regs[0];
+    int flags = _regs->regs[1];
+    for (int i = 0; i < FD_TABLE_SIZE; i++)
+    {
+        if (!current->fd_table[i] && !vfs_open(pathname, flags, &(current->fd_table[i])))
+        {       
+            _regs->regs[0] = i;
+            return;
+        }
+    }
+    return;
+}
+void sys_close(TrapFrame *_regs)
+{
+    int fd = _regs->regs[0];
+
+    if (fd < 0 || fd >= FD_TABLE_SIZE)
+    {
+        _regs->regs[0] = -1;
+        return;
+    }
+
+    if (current->fd_table[fd] && !vfs_close(current->fd_table[fd]))
+    {
+        current->fd_table[fd] = NULL;
+        _regs->regs[0] = 0;
+    }
+
+    return;
+}
+void sys_write(TrapFrame *_regs)
+{
+    int fd = _regs->regs[0];
+    const void *buf = (void *)_regs->regs[1];
+    unsigned long count = _regs->regs[2];
+
+    if (fd < 0 || fd >= FD_TABLE_SIZE)
+    {
+        _regs->regs[0] = -1;
+        return;
+    }
+    if (current->fd_table[fd])
+    {
+        _regs->regs[0] = vfs_write(current->fd_table[fd], buf, count);
+    }
+
+    return;
+}
+void sys_read(TrapFrame *_regs)
+{
+    int fd = _regs->regs[0];
+    void *buf = (void *)_regs->regs[1];
+    unsigned long count = _regs->regs[2];
+
+    if (fd < 0 || fd >= FD_TABLE_SIZE)
+    {
+        _regs->regs[0] = -1;
+        return;
+    }
+    if (current->fd_table[fd])
+    {
+        _regs->regs[0] = vfs_read(current->fd_table[fd], buf, count);
+    }
+
+    return;
+}
+void sys_mkdir(TrapFrame *_regs)
+{
+    const char *pathname = (char *)_regs->regs[0];
+
+    _regs->regs[0] = vfs_mkdir(pathname);
+    return;
+}
+void sys_mount(TrapFrame *_regs)
+{
+    const char *target = (char *)_regs->regs[1];
+    const char *filesystem = (char *)_regs->regs[2];
+
+    _regs->regs[0] = vfs_mount(target, filesystem);
+    return;
+}
+void sys_chdir(TrapFrame *_regs)
+{
+    const char *path = (char *)_regs->regs[0];
+    
+    _regs->regs[0] = vfs_chdir(path);
+    return;
+}
 syscall syscall_table[NUM_syscalls] = {
     [SYS_GETPID] = &sys_getpid,
     [SYS_UART_RECV] = &sys_uartrecv,
@@ -137,6 +227,13 @@ syscall syscall_table[NUM_syscalls] = {
     [SYS_SIGNAL] = &sys_signal,
     [SYS_SIGKILL] = &sys_sigkill,
     [SYS_SIGRETURN] = &sys_sigreturn,
+    [SYS_OPEN] = &sys_open,
+    [SYS_CLOSE] = &sys_close,
+    [SYS_WRITE] = &sys_write,
+    [SYS_READ] = &sys_read,
+    [SYS_MKDIR] = &sys_mkdir,
+    [SYS_MOUNT] = &sys_mount,
+    [SYS_CHDIR] = &sys_chdir,
 };
 
 void syscall_handler(TrapFrame *_regs)

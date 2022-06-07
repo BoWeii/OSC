@@ -13,6 +13,7 @@ struct vnode
     struct vnode_operations *v_ops;
     struct file_operations *f_ops;
 
+    // internal
     list childs;
     size_t child_num;
     list self;
@@ -65,7 +66,7 @@ struct vnode_operations
                  const char *component_name);
 };
 
-void init_rootfs();
+void fs_init();
 
 int fs_register(struct filesystem *fs);
 struct filesystem *fs_get(const char *name);
@@ -77,8 +78,10 @@ int vfs_read(struct file *file, void *buf, size_t len);
 int vfs_mkdir(const char *pathname);
 int vfs_mount(const char *target, const char *filesystem);
 int vfs_lookup(const char *pathname, struct vnode **target);
+int vfs_chdir(const char *pathname);
+struct vnode *vnode_create(const char *name, unsigned int flags);
 void vfs_test();
 
 
-extern struct mount *rootfs;
+extern struct mount *rootfs, *initramfs;
 #endif

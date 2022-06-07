@@ -6,7 +6,7 @@
 #include "mm.h"
 #include "mmu.h"
 
-unsigned int hex2dec(char *s)
+static unsigned int hex2dec(char *s)
 {
     unsigned int r = 0;
     for (int i = 0; i < 8; ++i)

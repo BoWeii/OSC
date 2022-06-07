@@ -111,6 +111,11 @@ struct task *create_task()
     new_task->signal = NULL;
     new_task->sig_context = NULL;
     new_task->ttbr0 = NULL;
+    new_task->pwd = rootfs->root;
+    for (int i = 0; i < FD_TABLE_SIZE; i++)
+    {
+        new_task->fd_table[i] = NULL;
+    }
     return new_task;
 }
 

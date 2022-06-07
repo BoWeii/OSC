@@ -2,12 +2,14 @@
 #include "utils_c.h"
 #include "mm.h"
 #include "tmpfs.h"
+#include "initramfs.h"
 #include "mini_uart.h"
+#include "current.h"
 
 list fs_list = LIST_HEAD_INIT(fs_list);
-struct mount *rootfs;
+struct mount *rootfs, *initramfs;
 
-const char *next_lvl_path(const char *src, char *dst, int size)
+static const char *next_lvl_path(const char *src, char *dst, int size)
 {
     for (int i = 0; i < size; ++i)
     {
@@ -27,25 +29,249 @@ const char *next_lvl_path(const char *src, char *dst, int size)
     return 0;
 }
 
+char *get_path(struct vnode **node)
+{
+    /* return a absolute path for node*/
+    int count = 0;
+    struct vnode *itr = *node;
+    char *compenent[128]; // brute force =_=
+    for (int i = 0; i < 128; i++)
+    {
+        compenent[i] = NULL;
+    }
+    while (itr->parent != itr)
+    {
+        int strlen = utils_strlen(itr->name);
+        compenent[count] = kcalloc(sizeof(char) * strlen);
+        memcpy(compenent[count], itr->name, strlen);
+        count++;
+        itr = itr->parent;
+    }
+    count -= 1;
+
+    char *ret = kcalloc((count + 1) * COMPONENT_SIZE * sizeof(char)); // +1 for slash
+    int index = 1;
+
+    ret[0] = '/';
+
+    for (int i = count - 1; i >= 0; i--)
+    {
+        for (int j = 0; j < utils_strlen(compenent[i]) - 1; j++)
+        {
+            ret[index++] = compenent[i][j];
+        }
+        ret[index++] = '/';
+    }
+    ret[index - 1] = '\0';
+    for (int i = count - 1; i >= 0; i--)
+    {
+        kfree(compenent[i]);
+    }
+
+    return ret;
+}
+
+const char *path_to_abs(const char *pathname)
+{
+    struct vnode *target_node = NULL;
+    const char *_pathname = pathname;
+
+    if (pathname[0] == '/')
+    {
+        return pathname;
+    }
+    else if (pathname[0] == '.')
+    {
+        if (pathname[1] == '.')
+        { // parent
+            target_node = current->pwd->parent;
+            _pathname = &pathname[3];
+        }
+        else
+        { // cur
+            target_node = current->pwd;
+            _pathname = &pathname[2];
+        }
+    }
+    else
+    {
+        target_node = current->pwd;
+        _pathname = pathname;
+    }
+
+    char *prefix = get_path(&target_node);
+    int prefix_len = utils_strlen(prefix) - 1;
+    int _pathname_len = utils_strlen(_pathname);
+
+    char *ret = kcalloc((prefix_len + _pathname_len) * sizeof(char));
+    memcpy(ret, prefix, prefix_len);
+    ret[prefix_len] = '/';
+    memcpy(ret + prefix_len + 1, _pathname, _pathname_len);
+    ret[prefix_len + _pathname_len] = '\0';
+
+    return ret;
+}
+
+int set_itr_node(const char *pathname, struct vnode **vnode)
+{
+    /*set the beginning of traversing and return the index of _pathname start*/
+    struct vnode *target_node = NULL;
+    int index = 0;
+
+    if (pathname[0] == '/')
+    {
+        *vnode = rootfs->root;
+        index = 1;
+        return index;
+    }
+    else if (pathname[0] == '.')
+    {
+        if (pathname[1] == '.')
+        {
+            target_node = current->pwd->parent;
+            index = 3;
+        }
+        else
+        {
+            target_node = current->pwd;
+            index = 2;
+        }
+    }
+    else
+    {
+        target_node = current->pwd;
+    }
+
+    *vnode = target_node;
+    return index;
+}
+
+int set_couple_node(struct vnode **parent, struct vnode **child, const char *pathname, char *prefix)
+{
+    /* if the pathname='/dir1/dir2/text' -> parent=dir2  child=text */
+    struct vnode *target_node = NULL;
+
+    struct vnode *itr = NULL;
+    int index = set_itr_node(pathname, &itr);
+    const char *_pathname = &pathname[index]; // pathname=../dir2/file   _pathname=dir2/file;
+
+    /* if pathname='/' -> _pathname='' */
+    if (!_pathname[0])
+    {
+        *parent = rootfs->root;
+        *child = rootfs->root;
+        next_lvl_path(_pathname, prefix, COMPONENT_SIZE); // update prefix
+        return 0;
+    }
+
+    /* The itr will be a directory (root is the toppest) */
+    while (1)
+    {
+        _pathname = next_lvl_path(_pathname, prefix, COMPONENT_SIZE);
+
+        if (itr->v_ops->lookup(itr, &target_node, prefix) == -1)
+        {
+            *parent = itr;
+            *child = NULL;
+            return -1;
+        }
+        else
+        {
+            if (S_ISDIR(target_node->f_mode))
+            {
+                if (!_pathname)
+                {
+                    /* encounter the last component */
+                    *child = target_node;
+                    *parent = target_node->parent;
+                    return 0;
+                }
+                itr = target_node;
+            }
+            else if (S_ISREG(target_node->f_mode))
+            {
+                *child = target_node;
+                *parent = target_node->parent;
+                return 0;
+            }
+        }
+    }
+
+    return 0;
+}
+
+struct vnode *vnode_create(const char *name, unsigned int flags)
+{
+    struct vnode *vnode = kcalloc(sizeof(struct vnode));
+
+    list_init(&vnode->childs);
+    list_init(&vnode->self);
+    vnode->child_num = 0;
+    vnode->parent = NULL;
+
+    size_t name_len = utils_strlen(name);
+    vnode->name = kcalloc(sizeof(name_len));
+    memcpy(vnode->name, name, name_len);
+
+    vnode->f_mode = flags;
+
+    vnode->content = NULL;
+    vnode->content_size = 0;
+
+    return vnode;
+}
+
 void init_rootfs()
 {
-    if (fs_register(tmfps_create()))
+    if (fs_register(tmpfs_create()))
     {
         uart_send_string("[fs] Error! fail to register tmpfs\n");
     }
     rootfs = kcalloc(sizeof(struct mount));
-    struct filesystem *tmpfs = fs_get("tmpfs");
-    if (!tmpfs)
+    struct filesystem *fs = fs_get("tmpfs");
+    if (!fs)
     {
         uart_send_string("[fs] Error! fail to get tmpfs\n");
         return;
     }
-    rootfs->fs = tmpfs;
+    rootfs->fs = fs;
     rootfs->root = vnode_create("", S_IFDIR);
     rootfs->fs->setup_mount(rootfs->fs, rootfs);
 #ifdef FS_DEBUG
     uart_send_string("[fs] init rootfs success\n");
 #endif
+}
+void init_initramfs()
+{
+    struct vnode *initramfs_root = NULL;
+    if (vfs_lookup("/initramfs", &initramfs_root))
+    {
+        uart_send_string("[init_initramfs] fail to lookup /initramfs\n");
+    }
+    if (fs_register(initramfs_create()))
+    {
+        uart_send_string("[fs] Error! fail to register tmpfs\n");
+    }
+    initramfs = kcalloc(sizeof(struct mount));
+    struct filesystem *fs = fs_get("initramfs");
+    if (!fs)
+    {
+        uart_send_string("[fs] Error! fail to get initramfs\n");
+        return;
+    }
+    initramfs->fs = fs;
+    initramfs->root = initramfs_root;
+    initramfs->fs->setup_mount(initramfs->fs, initramfs);
+#ifdef FS_DEBUG
+    uart_send_string("[fs] init rootfs success\n");
+#endif
+}
+
+void fs_init()
+{
+    init_rootfs();
+    vfs_mkdir("/initramfs");
+    init_initramfs();
 }
 
 int fs_register(struct filesystem *fs)
@@ -75,12 +301,12 @@ int vfs_open(const char *pathname, int flags, struct file **target)
 {
     int res = 0;
     struct vnode *target_node = NULL;
-
     res = vfs_lookup(pathname, &target_node);
 
-    if (res == -1 && !(flags & O_CREAT)) // can't lookup and without O_CREAT flag
+    if (res == -1 && !(flags & O_CREAT)) 
     {
-        uart_printf("[vfs_open] fail to open the file\n");
+        /* can't lookup and without O_CREAT flag */
+        uart_printf("[vfs_open] fail to open the %s\n", pathname);
         return -1;
     }
 
@@ -98,45 +324,22 @@ int vfs_open(const char *pathname, int flags, struct file **target)
         return 0;
     }
 
-    char prefix[COMPONENT_SIZE] = {0};
+    struct vnode *parent = NULL, *child = NULL;
+    char child_name[COMPONENT_SIZE];
 
-    const char *_pathname = &pathname[1]; // pathname=/dir1/dir2/file   _pathname=dir1/dir2/file;
-    struct vnode *itr = rootfs->root;
-    while (1)
+    set_couple_node(&parent, &child, pathname, child_name);
+    if (!child)
     {
-        _pathname = next_lvl_path(_pathname, prefix, COMPONENT_SIZE);
-        if (itr->v_ops->lookup(itr, &target_node, prefix) == -1)
-        {
-            if (!_pathname)
-            { // file
-                itr->v_ops->create(itr, &target_node, prefix);
-                break;
-            }
-            else
-            { // dir
-                uart_printf("[vfs_open] No such a directory exist\n");
-                return -1;
-            }
-        }
-        else
-        {
-            if (S_ISDIR(target_node->f_mode))
-            {
-                itr = target_node;
-            }
-            else if (S_ISREG(target_node->f_mode))
-            {
-                break; // find it
-            }
-        }
+        parent->v_ops->create(parent, &child, child_name);
+        (*target)->vnode = child;
+        return 0;
     }
-    (*target)->vnode = target_node;
-    return 0;
+
+    return -1;
 }
 
 int vfs_close(struct file *file)
 {
-    // TODO
     return file->vnode->f_ops->close(file);
 }
 
@@ -152,39 +355,17 @@ int vfs_read(struct file *file, void *buf, size_t len)
 
 int vfs_mkdir(const char *pathname)
 {
-    struct vnode *target_node = NULL;
-    char prefix[COMPONENT_SIZE] = {0};
+    struct vnode *parent = NULL, *child = NULL;
+    char child_name[COMPONENT_SIZE];
 
-    const char *_pathname = &pathname[1]; // pathname=/dir1/dir2/file   _pathname=dir1/dir2/file;
-    struct vnode *itr = rootfs->root;
+    set_couple_node(&parent, &child, pathname, child_name);
 
-    while (1)
+    if (child)
     {
-        _pathname = next_lvl_path(_pathname, prefix, COMPONENT_SIZE);
-        if (itr->v_ops->lookup(itr, &target_node, prefix) == -1)
-        { // not found
-            if (!_pathname)
-            { // encounter end
-                itr->v_ops->mkdir(itr, &target_node, prefix);
-                itr = target_node;
-                return 0;
-            }
-            uart_printf("[vfs_mkdir] No such a directory exist during traversing\n");
-            return -1;
-        }
-        else
-        { //  found
-            if (S_ISDIR(target_node->f_mode) && !_pathname)
-            {
-                uart_printf("[vfs_mkdir] the %s is already exist\n",pathname);
-                return -1;
-            }
-            else if (S_ISDIR(target_node->f_mode))
-            {
-                itr = target_node;
-            }
-        }
+        uart_printf("[vfs_mkdir] the %s is already exist\n", pathname);
+        return -1;
     }
+    parent->v_ops->mkdir(parent, &child, child_name);
     return 0;
 }
 int vfs_mount(const char *target, const char *filesystem)
@@ -216,83 +397,104 @@ int vfs_mount(const char *target, const char *filesystem)
 
     return 0;
 }
+
 int vfs_lookup(const char *pathname, struct vnode **target)
 {
-    // TODO: handle relative path
-
-    struct vnode *target_node = NULL;
-
-    char prefix[COMPONENT_SIZE] = {0};
-    const char *_pathname = &pathname[1]; // pathname=/dir1/dir2/file   _pathname=dir1/dir2/file;
-    struct vnode *itr = rootfs->root;
-
-    while (1)
+    struct vnode *parent = NULL, *child = NULL;
+    char child_name[COMPONENT_SIZE];
+    set_couple_node(&parent, &child, pathname, child_name);
+    if (child)
     {
-        _pathname = next_lvl_path(_pathname, prefix, COMPONENT_SIZE);
-        if (itr->v_ops->lookup(itr, &target_node, prefix) == -1)
-        {
-            return -1;
-        }
-        else
-        {
-            if (S_ISDIR(target_node->f_mode))
-            {
-                if (!_pathname)
-                {
-                    *target = target_node; // find the directory
-#ifdef FS_DEBUG
-                    uart_printf("[vfs_lookup] find the dir\n");
-#endif
-                    return 0;
-                }
-                itr = target_node;
-            }
-            else if (S_ISREG(target_node->f_mode))
-            {
-                *target = target_node; // find the file
-#ifdef FS_DEBUG
-                uart_printf("[vfs_lookup] find the file\n");
-#endif
-                return 0;
-            }
-        }
+        *target = child;
+        return 0;
     }
+    return -1;
+}
 
+int vfs_chdir(const char *pathname)
+{
+    struct vnode *node = NULL;
+
+    if (vfs_lookup(pathname, &node) == -1)
+    {
+        uart_printf("[vfs_chdir] fail to loopup the dir:%s\n", pathname);
+        return -1;
+    }
+    current->pwd = node;
     return 0;
 }
 
 void vfs_test()
 {
     struct file *f1;
-
-    vfs_open("/dir1/dir2/text", O_CREAT, &f1);
-    vfs_mkdir("/dir1/dir2");
+    /*
+    // absolute path
     vfs_mkdir("/dir1");
-    vfs_mkdir("/dir1");
-    vfs_mkdir("/dir1/dir1");
+    vfs_mkdir("/dir4");
+    vfs_mkdir("/dir1/dir3");
     vfs_mkdir("/dir1/dir2");
 
-    if (!vfs_open("/dir1/dir2/text", O_CREAT, &f1))
+    if (!vfs_open("/dir1/dir3/text", O_CREAT, &f1))
     {
-        uart_send_string("[v] open the /dir1/dir2/text \n");
+        uart_send_string("[v] open the /dir1/dir3/text \n");
     }
     char buf1[10] = "012345678\n";
     char buf2[10] = {0};
     vfs_write(f1, buf1, 8);
     vfs_close(f1);
 
-    vfs_open("/dir1/dir2/text", 0, &f1);
+    vfs_open("/dir1/dir3/text", 0, &f1);
     vfs_read(f1, buf2, 8);
     uart_printf("read buf2 :%s\n", buf2);
     vfs_close(f1);
 
-    if (vfs_mkdir("/dir1/dir2/dir3"))
+    if (vfs_mkdir("/dir1/dir2/dir5"))
     {
-        uart_send_string("[v] vfs_mkdir /dir1/dir2/dir3 fail \n");
+        uart_send_string("[v] vfs_mkdir /dir1/dir2/dir5 fail \n");
     }
-    if (!vfs_mount("/dir1/dir2/dir3", "tmpfs"))
+    if (!vfs_mount("/dir1/dir2/dir5", "tmpfs"))
     {
-        uart_send_string("[v] vfs_mount /dir1/dir2/dir3 success \n");
+        uart_send_string("[v] vfs_mount /dir1/dir2/dir5 success \n");
     }
-    
+
+    vfs_open("/dir4/t2", O_CREAT, &f1);
+    vfs_close(f1);
+
+    vfs_mkdir("/dir1/dir1");
+    vfs_open("/dir1/dir1/t3", O_CREAT, &f1);
+    vfs_close(f1);
+
+    vfs_chdir("/dir1");
+    */
+
+    // relative path
+    if (vfs_mkdir("/dir1") == -1)
+    {
+        uart_printf("fail to mkdir /dir1\n");
+    }
+    vfs_chdir("/dir1");
+    if (vfs_mkdir("../dir4") == -1)
+    {
+        uart_printf("fail to mkdir ../dir4\n");
+    }
+    vfs_mkdir("dir2");
+    vfs_mkdir("./dir3");
+    vfs_open("../dir4/t2", O_CREAT, &f1);
+
+    char buf1[10] = "012345678\n";
+    char buf2[10] = {0};
+    vfs_write(f1, buf1, 8);
+    vfs_close(f1);
+    vfs_open("../dir4/t2", 0, &f1);
+    vfs_read(f1, buf2, 8);
+    uart_printf("read buf2 :%s\n", buf2);
+    vfs_close(f1);
+    if (vfs_mkdir("./dir2/dir5"))
+    {
+        uart_send_string("[v] vfs_mkdir ./dir2/dir5 fail \n");
+    }
+    if (!vfs_mount("dir2/dir5", "tmpfs"))
+    {
+        uart_send_string("[v] vfs_mount dir2/dir5 success \n");
+    }
 }
