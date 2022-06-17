@@ -24,14 +24,14 @@ enum
     SSD_FILE,
 };
 
+char _pca_state[4] = {'O', 'X', '.', '-'};
+
 typedef enum
 {
     valid,
     stale,
     empty,
 } PCA_STATE;
-
-char _pca_state[4] = {'O', 'X', '.', '-'};
 
 typedef struct
 {
@@ -60,7 +60,6 @@ static unsigned int get_next_pca();
 void print_nands();
 static void garbage_collection();
 unsigned int *L2P, *P2L, free_block_number;
-// unsigned int *valid_count,
 PCA_INFO *pca_info;
 int empty_idx = PHYSICAL_NAND_NUM - 1;
 
@@ -235,7 +234,6 @@ static unsigned int get_next_pca()
         // init
         curr_pca.pca = 0;
         pca_info[0].valid_count = 0;
-        // valid_count[0] = 0;
         free_block_number--;
         return curr_pca.pca;
     }
@@ -245,6 +243,7 @@ static unsigned int get_next_pca()
         if (free_block_number <= 2)
         {
             garbage_collection();
+            free_block_number--;
             return curr_pca.pca;
         }
         int temp = get_next_block();
@@ -278,8 +277,8 @@ static int set_stale(PCA_RULE my_pca)
     PCA_STATE *target = &(pca_info[my_pca.fields.nand].state[my_pca.fields.lba]);
     if (my_pca.pca != INVALID_PCA && *target == valid)
     {
-        pca_info[my_pca.fields.nand].valid_count--;
         *target = stale;
+        pca_info[my_pca.fields.nand].valid_count--;
         return 0;
     }
 }
@@ -297,12 +296,9 @@ static int ftl_write(const char *buf, size_t lba_range, size_t lba)
     set_stale(my_pca);
 
     my_pca.pca = get_next_pca();
-    set_valid(my_pca);
 
     L2P[lba] = my_pca.pca;
     P2L[PCA_TO_IDX(my_pca)] = lba;
-    // printf(" ==================================== lba=%d ; new_pca_idx=%d ; new_pca=%lx; free_block=%d =====\n", lba, PCA_TO_IDX(my_pca), my_pca.pca,free_block_number);
-
     return nand_write(buf, my_pca.pca);
 }
 
@@ -422,11 +418,11 @@ static int ssd_do_write(const char *buf, size_t size, off_t offset)
             {
                 tmp_buf[i] = buf[buf_idx++];
             }
-            ftl_write(tmp_buf, tmp_lba_range, tmp_lba + idx); // arg not sure
+            ftl_write(tmp_buf, tmp_lba_range, tmp_lba + idx); 
         }
         else
         {
-            ftl_write(buf + buf_idx, tmp_lba_range, tmp_lba + idx); // arg not sure
+            ftl_write(buf + buf_idx, tmp_lba_range, tmp_lba + idx); 
             buf_idx += 512;
         }
     }
@@ -547,12 +543,14 @@ int main(int argc, char *argv[])
 
 void print_nands(void)
 {
-    printf("===========================================================\n");
+    printf("=====================print_nands======================================\n");
+    printf("nand_write_size=%d, host_write_size=%d\n",nand_write_size ,host_write_size);
+
     for (int i = 0; i < PHYSICAL_NAND_NUM; ++i)
     {
         if (pca_info[i].valid_count == FREE_BLOCK)
         {
-            printf("NAND_%d     | Invalid\n", i);
+            printf("NAND_%d     | FREE_BLOCK\n", i);
         }
         else
         {
@@ -561,7 +559,6 @@ void print_nands(void)
             {
                 int idx = pca_info[i].state[j] == -1 ? 3 : pca_info[i].state[j];
                 printf("%c", _pca_state[idx]);
-                // printf("%d ", _pca_state[idx]);
             }
             printf("\n");
         }
