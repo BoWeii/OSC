@@ -13,7 +13,7 @@ struct vnode
     struct vnode_operations *v_ops;
     struct file_operations *f_ops;
 
-    // internal
+    // common internal
     list childs;
     size_t child_num;
     list self;
@@ -23,6 +23,9 @@ struct vnode
 
     void *content;
     size_t content_size;
+
+    // customer internal
+    void *internal;
 };
 
 // file handle

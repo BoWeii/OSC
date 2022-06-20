@@ -68,7 +68,7 @@ static int create(struct vnode *dir_node, struct vnode **target, const char *com
 #ifdef FS_DEBUG
     uart_printf("[fs] create file:%s, parent:%s\n", component_name, dir_node->name);
 #endif
-
+    
     struct vnode *new_vnode = vnode_create(component_name, S_IFREG);
     new_vnode->mount = dir_node->mount;
     new_vnode->v_ops = dir_node->v_ops;
@@ -115,8 +115,8 @@ static int write(struct file *file, const void *buf, size_t len)
         return -1;
     }
     if (vnode->content_size <= file->f_pos + len)
-    { // enlarge content, +1 for EOF
-        void *new_content = kcalloc(sizeof(file->f_ops + len + 1));
+    { // enlarge content
+        void *new_content = kcalloc(sizeof(file->f_ops + len ));
         memcpy(new_content, vnode->content, vnode->content_size); // origin data;
         if (vnode->content)
         { // avoid the free the 0 in beginning
@@ -124,7 +124,7 @@ static int write(struct file *file, const void *buf, size_t len)
         }
 
         vnode->content = new_content;
-        vnode->content_size = file->f_pos + len + 1; // pos=22  len=8  30
+        vnode->content_size = file->f_pos + len ; // pos=22  len=8  30
     }
 
     memcpy(vnode->content + file->f_pos, buf, len);
@@ -137,10 +137,10 @@ static int read(struct file *file, void *buf, size_t len)
     struct vnode *vnode = file->vnode;
     if (!S_ISREG(vnode->f_mode))
     {
-        uart_send_string("[write] not a regular file\n");
+        uart_send_string("[read] not a regular file\n");
         return -1;
     }
-    int min = (len > vnode->content_size - file->f_pos - 1) ? vnode->content_size - file->f_pos - 1 : len; // -1 for EOF;
+    int min = (len > vnode->content_size - file->f_pos ) ? vnode->content_size - file->f_pos : len; // -1 for EOF;
     if (min == 0)
     {
         return -1; // f_pos at EOF or len==0;

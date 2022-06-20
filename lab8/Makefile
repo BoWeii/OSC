@@ -3,15 +3,20 @@ K8=kernel8
 BL=bootloader
 LINKER=linker.ld
 START=start
-CPIO:=archive/initramfs.cpio
+CPIO:=archive/initramf.gz
 TA_CPIO:=archive/TA/initramfs.cpio
-TA_IMG:=archive/TA/vfs1.img
+TA_IMG:=archive/TA/vfs2.img
+SFN_IMG:=archive/TA/sfn_nctuos.img
 
 DTB:=archive/bcm2710-rpi-3-b-plus.dtb
 USER_DIR:=users/user
 USER1:=user1
 USER2:=user2
 BUILD:=build/
+
+IMG_NAME   := build/sdcard.img
+# IMG_NAME   := archive/TA/sfn_nctuos.img
+
 
 BUILD_ELF:=$(shell find build/ -name '*.elf')
 BUILD_IMG:=$(shell find build/ -name '*.img')
@@ -87,16 +92,22 @@ $(BUILD)$(USER2).img:$(USER2_OBJS)
 
 $(CPIO):
 	cp $(TA_IMG) archive/rootfs
-	cd archive/rootfs&&find . | cpio -o -H newc > ../initramfs.cpio
+	cd archive/rootfs&&find . | cpio -o -H newc > ../initramf.gz
+
 
 on:
 	sudo screen /dev/ttyUSB0 115200
-qe: $(BUILD)$(K8).img
+
+qe: $(BUILD)$(K8).img $(IMG_NAME)
 	qemu-system-aarch64 -M raspi3 -kernel $< \
 	-display none \
+	-drive if=sd,file=$(IMG_NAME),format=raw \
 	-serial null -serial stdio -s \
 	-initrd $(CPIO) \
 	-dtb $(DTB) \
+
+$(IMG_NAME):
+	./script/createImg.sh $(IMG_NAME)
 
 clean:
 	$(RM) $(BUILD_ELF) $(CPIO) \

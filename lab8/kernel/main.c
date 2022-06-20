@@ -24,16 +24,19 @@ void kernel_main(void *_dtb_ptr)
 {
     dtb_start=(uintptr_t)_dtb_ptr;
     uart_send_string("Hello, world!\n");
+    
     mm_init();
-
     setup_kernel_space_mapping();
+    
     fs_init();
 
     thread_init();
     // thread_create(&shell);
-    exe_new_prog("/initramfs/vfs1.img");
+    exe_new_prog("/initramfs/vfs2.img");
+    
     timeout_event_init();
     add_timer((timer_callback)thread_schedule, (size_t)0, MS(SCHE_CYCLE));
+    
     enable_interrupt();
     idle();
 }

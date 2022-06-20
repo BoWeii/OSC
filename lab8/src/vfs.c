@@ -5,9 +5,11 @@
 #include "initramfs.h"
 #include "mini_uart.h"
 #include "current.h"
+#include "sd.h"
+#include "fat32.h"
 
 list fs_list = LIST_HEAD_INIT(fs_list);
-struct mount *rootfs, *initramfs;
+struct mount *rootfs, *initramfs, *fat32;
 
 static const char *next_lvl_path(const char *src, char *dst, int size)
 {
@@ -31,10 +33,10 @@ static const char *next_lvl_path(const char *src, char *dst, int size)
 
 char *get_path(struct vnode **node)
 {
-    /* return a absolute path for node*/
+    /* return a absolute path for node */
     int count = 0;
     struct vnode *itr = *node;
-    char *compenent[128]; // brute force =_=
+    char *compenent[128]; // brute force
     for (int i = 0; i < 128; i++)
     {
         compenent[i] = NULL;
@@ -83,12 +85,12 @@ const char *path_to_abs(const char *pathname)
     else if (pathname[0] == '.')
     {
         if (pathname[1] == '.')
-        { // parent
+        {
             target_node = current->pwd->parent;
             _pathname = &pathname[3];
         }
         else
-        { // cur
+        {
             target_node = current->pwd;
             _pathname = &pathname[2];
         }
@@ -168,7 +170,6 @@ int set_couple_node(struct vnode **parent, struct vnode **child, const char *pat
     while (1)
     {
         _pathname = next_lvl_path(_pathname, prefix, COMPONENT_SIZE);
-
         if (itr->v_ops->lookup(itr, &target_node, prefix) == -1)
         {
             *parent = itr;
@@ -218,6 +219,8 @@ struct vnode *vnode_create(const char *name, unsigned int flags)
     vnode->content = NULL;
     vnode->content_size = 0;
 
+    vnode->internal = NULL;
+
     return vnode;
 }
 
@@ -263,15 +266,43 @@ void init_initramfs()
     initramfs->root = initramfs_root;
     initramfs->fs->setup_mount(initramfs->fs, initramfs);
 #ifdef FS_DEBUG
-    uart_send_string("[fs] init rootfs success\n");
+    uart_send_string("[fs] init initramfs success\n");
+#endif
+}
+void init_fat32()
+{
+    struct vnode *fat32_root = NULL;
+    if (vfs_lookup("/boot", &fat32_root))
+    {
+        uart_send_string("[init_fat32] fail to lookup /boot\n");
+    }
+    if (fs_register(fat32_create()))
+    {
+        uart_send_string("[init_fat32] Error! fail to register fat32\n");
+    }
+    fat32 = kcalloc(sizeof(struct mount));
+    struct filesystem *fs = fs_get("fat32");
+    if (!fs)
+    {
+        uart_send_string("[fs] Error! fail to get fat32\n");
+        return;
+    }
+    fat32->fs = fs;
+    fat32->root = fat32_root;
+    fat32->fs->setup_mount(fat32->fs, fat32);
+#ifdef FS_DEBUG
+    uart_send_string("[fs] init fat32 success\n");
 #endif
 }
 
 void fs_init()
 {
+    sd_init();
     init_rootfs();
     vfs_mkdir("/initramfs");
     init_initramfs();
+    vfs_mkdir("/boot");
+    init_fat32();
 }
 
 int fs_register(struct filesystem *fs)
@@ -303,7 +334,7 @@ int vfs_open(const char *pathname, int flags, struct file **target)
     struct vnode *target_node = NULL;
     res = vfs_lookup(pathname, &target_node);
 
-    if (res == -1 && !(flags & O_CREAT)) 
+    if (res == -1 && !(flags & O_CREAT))
     {
         /* can't lookup and without O_CREAT flag */
         uart_printf("[vfs_open] fail to open the %s\n", pathname);
@@ -426,9 +457,10 @@ int vfs_chdir(const char *pathname)
 
 void vfs_test()
 {
-    struct file *f1;
-    /*
+    // struct file *f1;
+
     // absolute path
+    /*
     vfs_mkdir("/dir1");
     vfs_mkdir("/dir4");
     vfs_mkdir("/dir1/dir3");
@@ -468,7 +500,7 @@ void vfs_test()
     */
 
     // relative path
-    if (vfs_mkdir("/dir1") == -1)
+    /*if (vfs_mkdir("/dir1") == -1)
     {
         uart_printf("fail to mkdir /dir1\n");
     }
@@ -496,5 +528,38 @@ void vfs_test()
     if (!vfs_mount("dir2/dir5", "tmpfs"))
     {
         uart_send_string("[v] vfs_mount dir2/dir5 success \n");
+    }*/
+
+    /*
+    uart_printf("---------fat_basic 2-------\n");
+    struct vnode *node = NULL;
+    if (vfs_lookup("/boot/FAT_R.TXT", &node))
+    {
+        uart_send_string("[test] fail to lookup /boot/FAT_R.TXT\n");
     }
+    vfs_open("/boot/FAT_R.TXT", O_CREAT, &f1);
+    char buf1[10] = "012345678\n";
+    char buf2[10] = {0};
+    vfs_write(f1, buf1, 8);
+    vfs_close(f1);
+    vfs_open("/boot/FAT_R.TXT", 0, &f1);
+    vfs_read(f1, buf2, 8);
+    uart_printf("read buf2 :%s\n", buf2);
+    vfs_close(f1);
+    uart_printf("---------fat_basic 2-------\n");
+    vfs_open("/boot/AAA.TXT", O_CREAT, &f1);
+    if (vfs_open("/boot/AAA.TXT", 0, &f1))
+    {
+        uart_send_string("[test] fail to open /boot/AAA.TXT\n");
+    }
+    char buf3[10] = "876543210\n";
+    char buf4[10] = {0};
+    vfs_write(f1, buf3, 8);
+    uart_printf("[test] close\n");
+    vfs_close(f1);
+    uart_printf("[test] read\n");
+    vfs_open("/boot/AAA.TXT", 0, &f1);
+    vfs_read(f1, buf4, 8);
+    uart_printf("read buf4 :%s\n", buf4);
+    */
 }
