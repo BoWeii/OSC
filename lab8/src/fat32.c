@@ -25,7 +25,7 @@ struct fat_internal
 
 struct fat_boot_sector metadata;
 unsigned int *FAT_table = NULL;
-unsigned int *table_dirty = NULL;
+unsigned int *table_dirty_record = NULL;
 
 /* size in sectors*/
 unsigned int fat_region_start;  /* file allocation table #1 #2 ... */
@@ -149,10 +149,10 @@ void init_root(struct vnode *node)
         return;
     }
     FAT_table = (unsigned int *)table;
-    table_dirty = kcalloc(metadata.sec_per_fat32 * sizeof(unsigned int));
-    for (int i = 0; i < metadata.sec_per_fat32; i++)
+    table_dirty_record = kcalloc(metadata.n_fats * metadata.sec_per_fat32 * sizeof(unsigned int));
+    for (int i = 0; i < metadata.n_fats * metadata.sec_per_fat32; i++)
     {
-        table_dirty[i] = 0;
+        table_dirty_record[i] = 0;
     }
 
     node->internal = kcalloc(sizeof(struct fat_internal));
@@ -280,11 +280,13 @@ static int sync(struct vnode *node)
         uart_printf("[sync] old_block>new_block!\n");
         return -1;
     }
+
     int last_id = internal->cluster_id;
     while (FAT_table[last_id] < END_OF_CHAIN_START)
     {
         last_id = FAT_table[last_id];
     }
+
     for (int i = 0; metadata.n_fats * metadata.sec_per_fat32 * metadata.byte_per_sec / sizeof(unsigned int) && old_block < new_block; i++)
     {
         if (FAT_table[i] != 0)
@@ -292,18 +294,19 @@ static int sync(struct vnode *node)
             continue;
         }
         FAT_table[last_id] = i;
-        table_dirty[last_id / 512] = 1;
+        table_dirty_record[last_id / BLOCK_SIZE] = 1;
         last_id = i;
         FAT_table[last_id] = END_OF_CHAIN_START;
-        table_dirty[last_id / 512] = 1;
+        table_dirty_record[last_id / BLOCK_SIZE] = 1;
         old_block++;
     }
+
     for (int i = 0; i < metadata.n_fats * metadata.sec_per_fat32; i++)
     {
-        if (table_dirty[i])
+        if (table_dirty_record[i])
         {
             writeblock(fat_region_start + i, ((char *)FAT_table) + BLOCK_SIZE * i);
-            table_dirty[i] = 0;
+            table_dirty_record[i] = 0;
         }
     }
     // update data
