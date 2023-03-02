@@ -31,7 +31,7 @@ void load_img()
     unsigned char *current = (unsigned char *)kernel_addr;
     while (img_size--)
     {
-        *current = uart_recv();
+        *current = uart_recv_raw();
         current++;
         uart_send('.');
     }
